@@ -23,7 +23,7 @@
     "eslint": "^9",
     "eslint-plugin-obsidianmd": "latest",
     "obsidian": "latest",
-    "typescript": "^5.8.3",
+    "typescript": "5.9.3",
     "vitest": "^3"
   },
   "dependencies": {
