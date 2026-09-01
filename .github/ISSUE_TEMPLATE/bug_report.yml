@@ -1,0 +1,62 @@
+name: Bug report
+description: Something isn't syncing right
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Plugin version
+      description: Settings → Filen Sync, or the manifest version
+      placeholder: "0.6.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      multiple: true
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Android
+        - iOS
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, what happened instead?
+      placeholder: "I edited a note on my desktop, synced, then synced on my phone and…"
+    validations:
+      required: true
+
+  - type: textarea
+    id: self-test
+    attributes:
+      label: Self-test result (optional)
+      description: Run "Filen Sync: Run Filen sync self-test" from the command palette and paste the result summary
+      placeholder: "All checks passed / stage 3 failed with…"
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Sync log (optional but very helpful)
+      description: >
+        Command palette → "Filen Sync: Show sync log" → Copy log. The log contains vault
+        file paths — review before pasting. Never paste passwords, keys, or tokens
+        (the plugin never logs them, but double-check).
+      render: text
+
+  - type: textarea
+    id: debug-console
+    attributes:
+      label: Debug console output (for tricky cases)
+      description: >
+        Enable Settings → Filen Sync → Debug log, reproduce, then copy the
+        [filen-sync] lines from the developer console (Ctrl/Cmd+Shift+I → Console)
+      render: text

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Filen Sync — Zero-knowledge sync for Obsidian</title>
+<style>
+  :root {
+    --paper: #faf7f1;
+    --paper-2: #f3efe7;
+    --ink: #211f1c;
+    --ink-soft: #57534a;
+    --accent: #a35d2a;
+    --line: #e3ddd1;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--sans); line-height: 1.65; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 28px; }
+
+  header.top { border-bottom: 1px solid var(--line); }
+  header.top .wrap { display: flex; justify-content: space-between; align-items: baseline; padding-top: 22px; padding-bottom: 22px; }
+  .brand { font-family: var(--serif); font-size: 22px; font-weight: 600; letter-spacing: .2px; }
+  nav a { color: var(--ink-soft); text-decoration: none; margin-left: 26px; font-size: 14.5px; }
+  nav a:hover { color: var(--accent); }
+
+  .hero { padding: 96px 0 72px; text-align: center; }
+  .hero .kicker { font-size: 13px; letter-spacing: 2.4px; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  .hero h1 { font-family: var(--serif); font-size: 52px; line-height: 1.12; font-weight: 600; margin: 18px 0 10px; }
+  .hero h1 em { font-style: italic; color: var(--accent); }
+  .hero p.lede { max-width: 620px; margin: 0 auto; color: var(--ink-soft); font-size: 18px; }
+  .hero .cta { margin-top: 34px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn { font-size: 15px; text-decoration: none; padding: 12px 26px; border-radius: 4px; border: 1px solid var(--ink); }
+  .btn.primary { background: var(--ink); color: var(--paper); }
+  .btn.primary:hover { background: var(--accent); border-color: var(--accent); }
+  .btn.ghost { color: var(--ink); }
+  .btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  .rule { border: none; border-top: 1px solid var(--line); margin: 0; }
+
+  section { padding: 72px 0; }
+  h2 { font-family: var(--serif); font-size: 32px; font-weight: 600; margin-bottom: 8px; }
+  .sub { color: var(--ink-soft); margin-bottom: 40px; }
+
+  .features { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+  .feature { background: var(--paper); padding: 30px 30px 26px; }
+  .feature h3 { font-family: var(--serif); font-size: 19px; font-weight: 600; margin-bottom: 6px; }
+  .feature p { color: var(--ink-soft); font-size: 15px; }
+  .feature .num { font-family: var(--mono); font-size: 12px; color: var(--accent); display: block; margin-bottom: 10px; }
+
+  .steps { counter-reset: step; }
+  .step { display: flex; gap: 22px; padding: 22px 0; border-bottom: 1px solid var(--line); }
+  .step:last-child { border-bottom: none; }
+  .step::before { counter-increment: step; content: counter(step, decimal-leading-zero); font-family: var(--mono); color: var(--accent); font-size: 14px; padding-top: 3px; }
+  .step h3 { font-size: 16.5px; margin-bottom: 2px; }
+  .step p { color: var(--ink-soft); font-size: 15px; }
+  code { font-family: var(--mono); font-size: 13.5px; background: var(--paper-2); padding: 2px 7px; border-radius: 3px; }
+
+  .principles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
+  .principle { border-top: 2px solid var(--ink); padding-top: 16px; }
+  .principle h3 { font-size: 16px; margin-bottom: 4px; }
+  .principle p { color: var(--ink-soft); font-size: 14.5px; }
+
+  footer { border-top: 1px solid var(--line); padding: 36px 0 46px; color: var(--ink-soft); font-size: 14px; }
+  footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  footer a { color: var(--accent); text-decoration: none; }
+
+  @media (max-width: 720px) {
+    .hero h1 { font-size: 36px; }
+    .features, .principles { grid-template-columns: 1fr; }
+    .hero { padding: 64px 0 52px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <span class="brand">Filen Sync</span>
+    <nav>
+      <a href="#features">Features</a>
+      <a href="#install">Install</a>
+      <a href="#principles">Principles</a>
+      <a href="https://github.com/Real-Fruit-Snacks/obsidian-filen-sync">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+  <section class="hero">
+    <span class="kicker">Obsidian plugin</span>
+    <h1>Your notes. Your cloud.<br><em>Zero knowledge.</em></h1>
+    <p class="lede">Two-way sync between Obsidian and Filen, the end-to-end encrypted
+      cloud. Every byte is encrypted on your device before it leaves — on desktop
+      and mobile alike.</p>
+    <div class="cta">
+      <a class="btn primary" href="#install">Get the plugin</a>
+      <a class="btn ghost" href="https://github.com/Real-Fruit-Snacks/obsidian-filen-sync">View source</a>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section id="features">
+    <h2>Built like it matters</h2>
+    <p class="sub">A sync engine designed for correctness first, speed second.</p>
+    <div class="features">
+      <div class="feature"><span class="num">01</span><h3>End-to-end encrypted</h3><p>Files and metadata are encrypted on your device with your Filen keys. The cloud stores ciphertext — nothing else.</p></div>
+      <div class="feature"><span class="num">02</span><h3>Desktop and mobile</h3><p>Windows, macOS, Linux, Android, iOS. The same plugin, the same vault, everywhere you take notes.</p></div>
+      <div class="feature"><span class="num">03</span><h3>Conflicts without tears</h3><p>Keep-both by default, keep-newer optional — and a side-by-side merge view when you want to decide yourself.</p></div>
+      <div class="feature"><span class="num">04</span><h3>Version history</h3><p>Browse and restore Filen file versions from inside Obsidian. Yesterday's draft is one click away.</p></div>
+      <div class="feature"><span class="num">05</span><h3>Selective sync</h3><p>Ignore folders, sync your theme and snippets between machines, share a curated settings set across devices.</p></div>
+      <div class="feature"><span class="num">06</span><h3>Provably honest</h3><p>A built-in self-test verifies auth, encryption round-trip and metadata interop against your live account.</p></div>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section id="install">
+    <h2>Up in two minutes</h2>
+    <p class="sub">A Filen account is required. Any plan works — including free.</p>
+    <div class="steps">
+      <div class="step"><div><h3>Install the plugin</h3><p>Find Filen Sync in the community plugin browser, install via <code>BRAT</code>, or copy three files into <code>.obsidian/plugins/filen-sync</code>.</p></div></div>
+      <div class="step"><div><h3>Connect</h3><p>Enter your Filen email and password once. The password derives your keys in memory and is never stored.</p></div></div>
+      <div class="step"><div><h3>Sync</h3><p>Your vault appears in Filen under <code>Obsidian/&lt;vault&gt;</code>. On your next device, point at the same folder and everything downloads.</p></div></div>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section id="principles">
+    <h2>Principles</h2>
+    <p class="sub">Non-negotiables, written into the code and the tests.</p>
+    <div class="principles">
+      <div class="principle"><h3>No telemetry</h3><p>The plugin talks to Filen's servers and nothing else. No analytics, no tracking, no third-party calls.</p></div>
+      <div class="principle"><h3>Trash-only deletes</h3><p>Nothing is ever permanently deleted — local files go to system trash, remote files to Filen trash. Recovery is one click.</p></div>
+      <div class="principle"><h3>Open everything</h3><p>MIT licensed. Design documents, research notes and 257 tests ship in the repo.</p></div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>Filen Sync — an independent open-source plugin. Not affiliated with Obsidian or Filen.</span>
+    <span><a href="https://github.com/Real-Fruit-Snacks/obsidian-filen-sync">GitHub</a> · <a href="https://filen.io">Filen</a> · <a href="https://obsidian.md">Obsidian</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

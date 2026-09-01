@@ -1,0 +1,18 @@
+# dependencies
+node_modules/
+
+# build artifacts (main.js is a release asset, not source)
+main.js
+dist/
+
+# test/coverage output
+coverage/
+
+# editor / OS noise
+.DS_Store
+*.log
+.idea/
+.vscode/
+
+# local env
+.env

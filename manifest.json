@@ -1,0 +1,10 @@
+{
+	"id": "filen-sync",
+	"name": "Filen Sync",
+	"version": "0.6.0",
+	"minAppVersion": "1.8.7",
+	"description": "Two-way sync between your vault and Filen, a zero-knowledge end-to-end encrypted cloud storage. Works on desktop and mobile.",
+	"author": "Real-Fruit-Snacks",
+	"isDesktopOnly": false,
+	"authorUrl": "https://github.com/Real-Fruit-Snacks"
+}

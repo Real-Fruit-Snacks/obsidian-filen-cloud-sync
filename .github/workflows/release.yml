@@ -1,0 +1,53 @@
+name: Release
+
+# Tag push ("git tag 0.6.1 && git push origin 0.6.1") → build → GitHub release
+# with the exact assets Obsidian/BRAT expect: main.js, manifest.json, styles.css.
+# The tag MUST equal manifest.json's version (checked below).
+
+on:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+
+      - run: npm ci
+
+      - name: Verify tag matches manifest version
+        run: |
+          MANIFEST_VERSION=$(node -p "require('./manifest.json').version")
+          TAG="${GITHUB_REF_NAME}"
+          if [ "$MANIFEST_VERSION" != "$TAG" ]; then
+            echo "::error::Tag ($TAG) does not match manifest.json version ($MANIFEST_VERSION)."
+            exit 1
+          fi
+
+      - name: Build
+        run: npm run build
+
+      - name: Mobile tripwire (no Node builtins in the bundle)
+        run: |
+          if grep -nE 'require\("(fs|crypto|path|os|stream|buffer|https|url|util|events|node:.*)"\)' main.js; then
+            echo "::error::Node.js builtin imports found in main.js — refusing to release."
+            exit 1
+          fi
+
+      - name: Create GitHub release with plugin assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" main.js manifest.json styles.css \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes

@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck + production bundle
+        run: npm run build
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Mobile tripwire (no Node builtins in the bundle)
+        run: |
+          if grep -nE 'require\("(fs|crypto|path|os|stream|buffer|https|url|util|events|node:.*)"\)' main.js; then
+            echo "::error::Node.js builtin imports found in main.js — this crashes Obsidian mobile."
+            exit 1
+          fi
+          echo "Bundle is mobile-safe."
