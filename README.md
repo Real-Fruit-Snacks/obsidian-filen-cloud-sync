@@ -1,5 +1,7 @@
 # Filen Sync
 
+![Filen Sync cover](docs/images/cover.png)
+
 <!-- Replace Real-Fruit-Snacks/obsidian-filen-sync with your GitHub path after creating the repo -->
 ![CI](https://github.com/Real-Fruit-Snacks/obsidian-filen-sync/actions/workflows/ci.yml/badge.svg)
 ![Release](https://img.shields.io/github/v/release/Real-Fruit-Snacks/obsidian-filen-sync)
