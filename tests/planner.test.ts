@@ -702,7 +702,7 @@ describe("planner never plans the shared-preferences file (v0.5.0)", () => {
 	it("remote-only prefs file → no download, no ops at all", () => {
 		const plan = planSync(
 			localTree(),
-			remoteTree(rf(".filen-sync-preferences.json", "u-prefs", T0, 200)),
+			remoteTree(rf(".filen-cloud-sync-preferences.json", "u-prefs", T0, 200)),
 			new Map(),
 			opts({ ignoreMassChangeGuard: true }),
 		);
@@ -715,8 +715,8 @@ describe("planner never plans the shared-preferences file (v0.5.0)", () => {
 		// caller ignored the scan exclusion — the planner guard is the
 		// second line of defense.
 		const plan = planSync(
-			localTree(lf(".filen-sync-preferences.json", T0 + 5000, 200)),
-			remoteTree(rf(".filen-sync-preferences.json", "u-prefs", T0, 200)),
+			localTree(lf(".filen-cloud-sync-preferences.json", T0 + 5000, 200)),
+			remoteTree(rf(".filen-cloud-sync-preferences.json", "u-prefs", T0, 200)),
 			new Map(),
 			opts(),
 		);
@@ -728,7 +728,7 @@ describe("planner never plans the shared-preferences file (v0.5.0)", () => {
 		const plan = planSync(
 			localTree(),
 			remoteTree(),
-			new Map([[".filen-sync-preferences.json", base()]]),
+			new Map([[".filen-cloud-sync-preferences.json", base()]]),
 			opts(),
 		);
 		expect(plan.ops).toHaveLength(0);
@@ -737,7 +737,7 @@ describe("planner never plans the shared-preferences file (v0.5.0)", () => {
 	it("real files around the prefs file plan normally", () => {
 		const plan = planSync(
 			localTree(lf("note.md", T0)),
-			remoteTree(rf(".filen-sync-preferences.json", "u-prefs", T0, 200)),
+			remoteTree(rf(".filen-cloud-sync-preferences.json", "u-prefs", T0, 200)),
 			new Map(),
 			opts(),
 		);

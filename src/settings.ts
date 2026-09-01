@@ -105,7 +105,7 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-		containerEl.addClass("filen-sync-settings");
+		containerEl.addClass("filen-cloud-sync-settings");
 
 		const credentials = this.plugin.getMemoryCredentials() ?? loadCredentials(this.app);
 
@@ -115,7 +115,7 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 			const connected = new Setting(containerEl)
 				.setName("Connected")
 				.setDesc(`Connected as ${credentials.email}`);
-			connected.descEl.addClass("filen-sync-connected");
+			connected.descEl.addClass("filen-cloud-sync-connected");
 			connected.addButton(button => button
 				.setButtonText("Disconnect")
 				.setWarning()
@@ -235,7 +235,7 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 					});
 				if (credentials) text.setDisabled(true);
 			});
-		if (credentials) remoteFolderSetting.descEl.addClass("filen-sync-warning");
+		if (credentials) remoteFolderSetting.descEl.addClass("filen-cloud-sync-warning");
 
 		// Toggle updates the paired input directly — calling this.display()
 		// here would re-render the whole tab and reset scroll to top.
@@ -356,7 +356,7 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 		const applyAllowlistState = (): void => {
 			const off = !this.plugin.settings.syncConfigDir;
 			for (const input of allowlistInputs) input.setDisabled(off);
-			allowlistSection.toggleClass("filen-sync-disabled", off);
+			allowlistSection.toggleClass("filen-cloud-sync-disabled", off);
 		};
 
 		// Friendly preset toggles for the well-known config items — they edit
@@ -377,7 +377,7 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 							this.plugin.onSharedSettingChanged(); // shared key (v0.5.0)
 						});
 				});
-			if (preset.warning) row.descEl.addClass("filen-sync-warning");
+			if (preset.warning) row.descEl.addClass("filen-cloud-sync-warning");
 		}
 
 		new Setting(allowlistSection)
@@ -459,7 +459,7 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 				// Regenerated on every display() — always reflects current settings.
 				text.setValue(buildSetupUri(this.plugin.settings));
 				text.inputEl.readOnly = true;
-				text.inputEl.addClass("filen-sync-setup-uri");
+				text.inputEl.addClass("filen-cloud-sync-setup-uri");
 			})
 			.addButton(button => button
 				.setButtonText("Copy")
@@ -477,7 +477,7 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 			)
 			.addTextArea(text => {
 				importArea = text;
-				text.setPlaceholder("filen-sync://setup/…");
+				text.setPlaceholder("filen-cloud-sync://setup/…");
 				text.inputEl.rows = 3;
 			})
 			.addButton(button => button
@@ -485,7 +485,7 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 				.onClick(async () => {
 					const parsed = parseSetupUri(importArea?.getValue() ?? "");
 					if (!parsed) {
-						new Notice("That doesn't look like a Filen Sync setup link");
+						new Notice("That doesn't look like a Filen Cloud Sync setup link");
 						return;
 					}
 					// Email only fills a LOCAL blank — never overwrites, and the
@@ -644,16 +644,16 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 	}
 
 	private renderIgnoredFolderChips(containerEl: HTMLElement): void {
-		const list = containerEl.createDiv({ cls: "filen-sync-ignored-list" });
+		const list = containerEl.createDiv({ cls: "filen-cloud-sync-ignored-list" });
 		if (this.plugin.settings.ignoredFolders.length === 0) {
-			list.createDiv({ cls: "filen-sync-ignored-empty" })
+			list.createDiv({ cls: "filen-cloud-sync-ignored-empty" })
 				.setText("No ignored folders.");
 			return;
 		}
 		for (const path of this.plugin.settings.ignoredFolders) {
-			const chip = list.createDiv({ cls: "filen-sync-ignored-chip" });
-			chip.createSpan({ cls: "filen-sync-ignored-path" }).setText(path);
-			const remove = chip.createEl("button", { cls: "filen-sync-ignored-remove" });
+			const chip = list.createDiv({ cls: "filen-cloud-sync-ignored-chip" });
+			chip.createSpan({ cls: "filen-cloud-sync-ignored-path" }).setText(path);
+			const remove = chip.createEl("button", { cls: "filen-cloud-sync-ignored-remove" });
 			remove.setText("Remove");
 			remove.setAttribute("aria-label", `Stop ignoring ${path}`);
 			remove.addEventListener("click", () => void this.removeIgnoredFolder(path));

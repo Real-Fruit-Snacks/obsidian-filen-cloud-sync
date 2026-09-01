@@ -27,24 +27,24 @@ export class ConflictMergeModal extends Modal {
 
 	onOpen(): void {
 		this.setTitle("Resolve conflict");
-		const body = this.contentEl.createDiv({ cls: "filen-sync-merge" });
+		const body = this.contentEl.createDiv({ cls: "filen-cloud-sync-merge" });
 
-		const header = body.createDiv({ cls: "filen-sync-merge-header" });
-		header.createDiv({ cls: "filen-sync-merge-path" }).setText(this.request.path);
-		const meta = header.createDiv({ cls: "filen-sync-merge-meta" });
+		const header = body.createDiv({ cls: "filen-cloud-sync-merge-header" });
+		header.createDiv({ cls: "filen-cloud-sync-merge-path" }).setText(this.request.path);
+		const meta = header.createDiv({ cls: "filen-cloud-sync-merge-meta" });
 		meta.setText(
 			`Local: ${formatLogTime(this.request.localMtime)} · ${formatBytes(this.request.localSize)}`
 			+ ` — Remote: ${formatLogTime(this.request.remoteMtime)} · ${formatBytes(this.request.remoteSize)}`,
 		);
 
 		const diff = diffLines(this.request.localText, this.request.remoteText);
-		const columns = body.createDiv({ cls: "filen-sync-merge-columns" });
-		const localCol = columns.createDiv({ cls: "filen-sync-merge-col" });
-		const remoteCol = columns.createDiv({ cls: "filen-sync-merge-col" });
-		localCol.createDiv({ cls: "filen-sync-merge-col-head" }).setText("Local");
-		remoteCol.createDiv({ cls: "filen-sync-merge-col-head" }).setText("Remote");
-		const localLines = localCol.createDiv({ cls: "filen-sync-merge-lines" });
-		const remoteLines = remoteCol.createDiv({ cls: "filen-sync-merge-lines" });
+		const columns = body.createDiv({ cls: "filen-cloud-sync-merge-columns" });
+		const localCol = columns.createDiv({ cls: "filen-cloud-sync-merge-col" });
+		const remoteCol = columns.createDiv({ cls: "filen-cloud-sync-merge-col" });
+		localCol.createDiv({ cls: "filen-cloud-sync-merge-col-head" }).setText("Local");
+		remoteCol.createDiv({ cls: "filen-cloud-sync-merge-col-head" }).setText("Remote");
+		const localLines = localCol.createDiv({ cls: "filen-cloud-sync-merge-lines" });
+		const remoteLines = remoteCol.createDiv({ cls: "filen-cloud-sync-merge-lines" });
 
 		let rendered = 0;
 		let truncated = 0;
@@ -54,25 +54,25 @@ export class ConflictMergeModal extends Modal {
 				continue;
 			}
 			rendered++;
-			const localLine = localLines.createDiv({ cls: "filen-sync-merge-line" });
-			const remoteLine = remoteLines.createDiv({ cls: "filen-sync-merge-line" });
+			const localLine = localLines.createDiv({ cls: "filen-cloud-sync-merge-line" });
+			const remoteLine = remoteLines.createDiv({ cls: "filen-cloud-sync-merge-line" });
 			if (op.type === "same") {
 				localLine.setText(op.line.length > 0 ? op.line : " ");
 				remoteLine.setText(op.line.length > 0 ? op.line : " ");
 			} else if (op.type === "remove") {
-				localLine.addClass("filen-sync-merge-removed");
+				localLine.addClass("filen-cloud-sync-merge-removed");
 				localLine.setText(op.line);
-				remoteLine.addClass("filen-sync-merge-blank");
+				remoteLine.addClass("filen-cloud-sync-merge-blank");
 				remoteLine.setText(" ");
 			} else {
-				remoteLine.addClass("filen-sync-merge-added");
+				remoteLine.addClass("filen-cloud-sync-merge-added");
 				remoteLine.setText(op.line);
-				localLine.addClass("filen-sync-merge-blank");
+				localLine.addClass("filen-cloud-sync-merge-blank");
 				localLine.setText(" ");
 			}
 		}
 		if (truncated > 0) {
-			body.createDiv({ cls: "filen-sync-merge-truncated" })
+			body.createDiv({ cls: "filen-cloud-sync-merge-truncated" })
 				.setText(`… ${truncated} further changed lines not shown`);
 		}
 

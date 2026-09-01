@@ -33,8 +33,8 @@ export function debugLog(tag: string, message: string, data?: unknown): void {
 	if (!enabled) return;
 	const stamp = new Date().toISOString();
 	if (data !== undefined) {
-		console.log(`[filen-sync] ${stamp} [${tag}] ${message}`, data);
+		console.log(`[filen-cloud-sync] ${stamp} [${tag}] ${message}`, data);
 	} else {
-		console.log(`[filen-sync] ${stamp} [${tag}] ${message}`);
+		console.log(`[filen-cloud-sync] ${stamp} [${tag}] ${message}`);
 	}
 }

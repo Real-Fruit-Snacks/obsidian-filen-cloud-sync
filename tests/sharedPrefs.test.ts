@@ -175,6 +175,6 @@ describe("applyPrefs", () => {
 
 describe("PREFS_FILE_NAME", () => {
 	it("is the exact root-level reserved name", () => {
-		expect(PREFS_FILE_NAME).toBe(".filen-sync-preferences.json");
+		expect(PREFS_FILE_NAME).toBe(".filen-cloud-sync-preferences.json");
 	});
 });

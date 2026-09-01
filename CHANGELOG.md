@@ -1,17 +1,23 @@
 # Changelog
 
-All notable changes to Filen Sync are documented here.
+All notable changes to Filen Cloud Sync are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 this project uses [Semantic Versioning](https://semver.org/).
 
-## [0.6.0] — 2026-09-01
+## [0.6.0] — first public release
+
+Released as **Filen Cloud Sync** (`filen-cloud-sync`). Developed under the
+working name "Filen Sync"; renamed before submission because that name was
+already taken in the community directory.
+
+### Added in 0.6.0 — 2026-09-01
 
 ### Added
 - **Sync plan preview (dry run)** — "Preview sync plan (dry run)" command and
   dashboard button show exactly what a sync would do (uploads, downloads,
   deletes, renames, folders, conflicts) before anything happens. The
   mass-change guard report is shown as a warning instead of aborting.
-- **Setup transfer** — export a `filen-sync://setup/...` link on one device
+- **Setup transfer** — export a `filen-cloud-sync://setup/...` link on one device
   and import it on another to copy settings (remote folder, email, shared
   preferences). Contains no passwords or keys. (QR code: planned.)
 - **Per-file transfer progress** — uploads/downloads report chunk-level
@@ -114,7 +120,7 @@ this project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 - **Selective folder ignore** — multi-folder, suggest-as-you-type picker and
-  right-click "Ignore in Filen sync"; ignored paths are never touched on
+  right-click "Ignore in Filen Cloud Sync"; ignored paths are never touched on
   either side and resume cleanly.
 - **Version history** — browse and restore Filen file versions from Obsidian.
 - **Memory-only credential mode** (optional) — keys never touch disk; unlock

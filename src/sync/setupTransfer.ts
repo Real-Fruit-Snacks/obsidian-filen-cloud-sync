@@ -3,7 +3,7 @@
  * imports, no IO — fully unit-testable.
  *
  * A setup URI copies SETTINGS — never credentials — from one device to
- * another: `filen-sync://setup/<base64url(JSON)>` with body
+ * another: `filen-cloud-sync://setup/<base64url(JSON)>` with body
  * `{v:1, email?, remoteFolder, prefs}` where prefs holds exactly the six
  * SharedPrefs keys. Passwords, API keys and master keys can never ride
  * along BY CONSTRUCTION: only the fields above are serialized.
@@ -12,7 +12,7 @@
 import { parseSharedPrefs, prefsFromSettings, SharedPrefs } from "./sharedPrefs";
 import { base64ToBytes, bytesToBase64, bytesToUtf8, utf8ToBytes } from "../util";
 
-export const SETUP_URI_PREFIX = "filen-sync://setup/";
+export const SETUP_URI_PREFIX = "filen-cloud-sync://setup/";
 export const SETUP_URI_VERSION = 1;
 
 /** Everything a setup URI carries. FilenSyncSettings satisfies this. */

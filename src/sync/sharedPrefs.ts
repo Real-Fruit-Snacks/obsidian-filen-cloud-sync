@@ -3,7 +3,7 @@
  * imports, no IO — fully unit-testable.
  *
  * A CURATED subset of settings (SharedPrefs) syncs across devices via an
- * encrypted JSON file `.filen-sync-preferences.json` placed directly in the
+ * encrypted JSON file `.filen-cloud-sync-preferences.json` placed directly in the
  * sync-root folder. Everything else (credentials, remote folder, intervals,
  * size limits, device/debug options) stays per-device.
  *
@@ -15,7 +15,7 @@
 import type { ConflictPolicy } from "./types";
 
 /** Root-level, exact name — hard-excluded from every sync operation. */
-export const PREFS_FILE_NAME = ".filen-sync-preferences.json";
+export const PREFS_FILE_NAME = ".filen-cloud-sync-preferences.json";
 
 /** File-format version; parsePrefs rejects anything else. */
 export const PREFS_VERSION = 1;

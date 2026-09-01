@@ -1074,21 +1074,21 @@ describe("v0.4.0 review fixes", () => {
 describe("shared-preferences file exclusion — engine (v0.5.0)", () => {
 	it("remote prefs file is never downloaded or planned; run exposes the remote tree", async () => {
 		const { engine, vault, seedRemote } = makeEngine();
-		seedRemote(".filen-sync-preferences.json", "{\"version\":1}", T0);
+		seedRemote(".filen-cloud-sync-preferences.json", "{\"version\":1}", T0);
 		vault.addFile("note.md", "hello", T0);
 
 		const run = await engine.run({ manual: true });
 		expect(run.status).toBe("ok");
 
 		// Never downloaded as vault content…
-		expect(vault.hasFile(".filen-sync-preferences.json")).toBe(false);
+		expect(vault.hasFile(".filen-cloud-sync-preferences.json")).toBe(false);
 		// …never planned in ANY op…
 		const ops = run.plan?.ops ?? [];
-		expect(ops.some(op => op.path === ".filen-sync-preferences.json"
-			|| op.toPath === ".filen-sync-preferences.json")).toBe(false);
+		expect(ops.some(op => op.path === ".filen-cloud-sync-preferences.json"
+			|| op.toPath === ".filen-cloud-sync-preferences.json")).toBe(false);
 		// …but still visible in the run's remote tree (main.ts's post-run
 		// shared-prefs check reads it from here — no extra API call).
-		expect(run.remoteTree?.files.has(".filen-sync-preferences.json")).toBe(true);
+		expect(run.remoteTree?.files.has(".filen-cloud-sync-preferences.json")).toBe(true);
 		// Real files sync normally around it.
 		expect(ops.some(op => op.kind === "upload" && op.path === "note.md")).toBe(true);
 	});
@@ -1096,14 +1096,14 @@ describe("shared-preferences file exclusion — engine (v0.5.0)", () => {
 	it("local prefs file is never uploaded, even with dotfiles allowed", async () => {
 		const { engine, vault, remoteFiles, settings } = makeEngine();
 		settings.excludeDotFiles = false;
-		vault.addFile(".filen-sync-preferences.json", "{\"version\":1}", T0);
+		vault.addFile(".filen-cloud-sync-preferences.json", "{\"version\":1}", T0);
 		vault.addFile("note.md", "hello", T0);
 
 		const run = await engine.run({ manual: true });
 		expect(run.status).toBe("ok");
 		const ops = run.plan?.ops ?? [];
-		expect(ops.some(op => op.path === ".filen-sync-preferences.json")).toBe(false);
-		expect(remoteFiles.has(".filen-sync-preferences.json")).toBe(false);
+		expect(ops.some(op => op.path === ".filen-cloud-sync-preferences.json")).toBe(false);
+		expect(remoteFiles.has(".filen-cloud-sync-preferences.json")).toBe(false);
 		expect(remoteFiles.has("note.md")).toBe(true);
 	});
 });

@@ -88,10 +88,10 @@ describe("setup transfer URI", () => {
 		expect(parseSetupUri("")).toBeNull();
 		expect(parseSetupUri("hello world")).toBeNull();
 		expect(parseSetupUri("https://example.com/setup/abc")).toBeNull();
-		expect(parseSetupUri("filen-sync://other/abc")).toBeNull();
-		expect(parseSetupUri("filen-sync://setup/")).toBeNull();
-		expect(parseSetupUri("filen-sync://setup/!!!not-base64!!!")).toBeNull();
-		expect(parseSetupUri("filen-sync://setup/a=b")).toBeNull(); // padding/invalid chars
+		expect(parseSetupUri("filen-cloud-sync://other/abc")).toBeNull();
+		expect(parseSetupUri("filen-cloud-sync://setup/")).toBeNull();
+		expect(parseSetupUri("filen-cloud-sync://setup/!!!not-base64!!!")).toBeNull();
+		expect(parseSetupUri("filen-cloud-sync://setup/a=b")).toBeNull(); // padding/invalid chars
 		// Valid base64url, but not JSON.
 		expect(parseSetupUri(uriForBody("just a string".slice(0)))).toBeNull();
 		const notJson = SETUP_URI_PREFIX + "bm90LWpzb24"; // "not-json"

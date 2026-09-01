@@ -1,6 +1,6 @@
 /**
  * Package the plugin: copy main.js + manifest.json + styles.css into
- * dist/filen-sync/ and zip as dist/filen-sync-<version>.zip.
+ * dist/filen-cloud-sync/ and zip as dist/filen-cloud-sync-<version>.zip.
  */
 import { copyFileSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";

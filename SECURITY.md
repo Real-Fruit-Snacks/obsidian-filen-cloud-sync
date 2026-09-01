@@ -9,7 +9,7 @@ manifest. We aim to acknowledge within 72 hours.
 
 Include: what happened, what you expected, reproduction steps, your Filen
 Sync version, platform (desktop OS / Android / iOS), and — if relevant — the
-output of the **debug log** (Settings → Filen Sync → Debug log, then
+output of the **debug log** (Settings → Filen Cloud Sync → Debug log, then
 reproduce). Logs never contain passwords, keys, or tokens, but they **do
 contain vault file paths** — review before sending.
 

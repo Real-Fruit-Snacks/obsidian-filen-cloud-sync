@@ -1,4 +1,4 @@
-# Contributing to Filen Sync
+# Contributing to Filen Cloud Sync
 
 Thanks for helping out. This document covers development setup, the project
 rules that keep the plugin working everywhere, and the release process.
@@ -6,14 +6,14 @@ rules that keep the plugin working everywhere, and the release process.
 ## Setup
 
 ```sh
-git clone <repo-url> filen-sync
-cd filen-sync
+git clone <repo-url> filen-cloud-sync
+cd filen-cloud-sync
 npm install
 npm run dev        # esbuild watch mode → main.js
 ```
 
 Install into a **test vault** (never your real one) by symlinking or copying
-the repo into `<vault>/.obsidian/plugins/filen-sync/`, then enable it in
+the repo into `<vault>/.obsidian/plugins/filen-cloud-sync/`, then enable it in
 Obsidian. Iterate with `npm run dev` + "Reload app without saving".
 
 ## Before you submit anything

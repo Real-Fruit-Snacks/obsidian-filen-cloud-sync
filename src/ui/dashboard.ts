@@ -10,7 +10,7 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import { formatQuota, relativeTime } from "../util";
 
-export const VIEW_TYPE_FILEN_DASHBOARD = "filen-sync-dashboard";
+export const VIEW_TYPE_FILEN_DASHBOARD = "filen-cloud-sync-dashboard";
 
 export type DashboardConnection =
 	| { status: "connected"; email: string; remoteFolder: string }
@@ -56,7 +56,7 @@ export class FilenSyncDashboardView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "Filen sync";
+		return "Filen Cloud Sync";
 	}
 
 	getIcon(): string {
@@ -87,14 +87,14 @@ export class FilenSyncDashboardView extends ItemView {
 	}
 
 	private section(root: HTMLElement, title: string): HTMLElement {
-		root.createEl("h4", { cls: "filen-sync-dashboard-heading" }).setText(title);
-		return root.createDiv({ cls: "filen-sync-dashboard-section" });
+		root.createEl("h4", { cls: "filen-cloud-sync-dashboard-heading" }).setText(title);
+		return root.createDiv({ cls: "filen-cloud-sync-dashboard-section" });
 	}
 
 	private render(): void {
 		const root = this.contentEl;
 		root.empty();
-		root.addClass("filen-sync-dashboard");
+		root.addClass("filen-cloud-sync-dashboard");
 
 		/* ---- Connection ---- */
 		const connection = this.deps.getConnection();
@@ -106,7 +106,7 @@ export class FilenSyncDashboardView extends ItemView {
 		} else {
 			connectionEl.createDiv().setText("Not connected — connect your account in settings");
 		}
-		connectionEl.createDiv({ cls: "filen-sync-dashboard-muted" })
+		connectionEl.createDiv({ cls: "filen-cloud-sync-dashboard-muted" })
 			.setText(`Remote folder: ${connection.remoteFolder}`);
 
 		/* ---- Last run ---- */
@@ -119,7 +119,7 @@ export class FilenSyncDashboardView extends ItemView {
 			line.setText(`${relativeTime(lastRun.finishedAt)} — ${lastRun.status}`);
 			// Absolute timestamp on hover for precision.
 			line.setAttr("title", new Date(lastRun.finishedAt).toLocaleString());
-			runEl.createDiv({ cls: "filen-sync-dashboard-muted" }).setText(lastRun.message);
+			runEl.createDiv({ cls: "filen-cloud-sync-dashboard-muted" }).setText(lastRun.message);
 		}
 
 		/* ---- Conflicts ---- */
@@ -129,7 +129,7 @@ export class FilenSyncDashboardView extends ItemView {
 			conflictsEl.setText("None in the last plan.");
 		} else {
 			for (const path of conflicts) {
-				conflictsEl.createDiv({ cls: "filen-sync-dashboard-conflict" }).setText(path);
+				conflictsEl.createDiv({ cls: "filen-cloud-sync-dashboard-conflict" }).setText(path);
 			}
 		}
 
@@ -150,13 +150,13 @@ export class FilenSyncDashboardView extends ItemView {
 		} else {
 			const quota = formatQuota(this.quota.storage, this.quota.maxStorage);
 			storageEl.createDiv().setText(quota.text);
-			const bar = storageEl.createEl("progress", { cls: "filen-sync-dashboard-quota-bar" });
+			const bar = storageEl.createEl("progress", { cls: "filen-cloud-sync-dashboard-quota-bar" });
 			bar.max = 1;
 			bar.value = quota.ratio;
 		}
 
 		/* ---- Actions ---- */
-		const buttons = root.createDiv({ cls: "filen-sync-dashboard-buttons" });
+		const buttons = root.createDiv({ cls: "filen-cloud-sync-dashboard-buttons" });
 		this.addButton(buttons, "Sync now", () => this.deps.onSyncNow(), true);
 		this.addButton(buttons, "Preview sync plan", () => this.deps.onPreviewPlan());
 		this.addButton(buttons, "Run self-test", () => this.deps.onSelfTest());
@@ -165,7 +165,7 @@ export class FilenSyncDashboardView extends ItemView {
 	}
 
 	private addButton(container: HTMLElement, label: string, onClick: () => void, cta = false): void {
-		const button = container.createEl("button", { cls: "filen-sync-dashboard-button" });
+		const button = container.createEl("button", { cls: "filen-cloud-sync-dashboard-button" });
 		if (cta) button.addClass("mod-cta");
 		button.setText(label);
 		button.addEventListener("click", onClick);

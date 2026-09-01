@@ -110,7 +110,7 @@ describe("self-test (v0.4.0 feature B)", () => {
 			expect(stage.durationMs).toBeGreaterThanOrEqual(0);
 		}
 		expect(report.stages[0]?.detail).toContain("user@example.com");
-		expect(report.stages[1]?.detail).toMatch(/^filen-sync-selftest-/);
+		expect(report.stages[1]?.detail).toMatch(/^filen-cloud-sync-selftest-/);
 		// onStage fired running→ok transitions in order
 		expect(events).toContain("0:running");
 		expect(events).toContain("0:ok");

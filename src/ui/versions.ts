@@ -50,7 +50,7 @@ export class VersionHistoryModal extends Modal {
 
 	onOpen(): void {
 		this.setTitle(`Filen version history — ${this.file.name}`);
-		const list = this.contentEl.createDiv({ cls: "filen-sync-versions-list" });
+		const list = this.contentEl.createDiv({ cls: "filen-cloud-sync-versions-list" });
 		list.setText("Loading versions…");
 		void this.loadVersions(list);
 	}
@@ -83,16 +83,16 @@ export class VersionHistoryModal extends Modal {
 			return;
 		}
 		for (const version of this.resolved) {
-			const row = list.createDiv({ cls: "filen-sync-version-row" });
-			const info = row.createDiv({ cls: "filen-sync-version-info" });
+			const row = list.createDiv({ cls: "filen-cloud-sync-version-row" });
+			const info = row.createDiv({ cls: "filen-cloud-sync-version-info" });
 			const when = new Date(versionMillis(version.entry.timestamp)).toLocaleString();
 			const size = version.metadata ? formatSize(version.metadata.size) : "unknown size";
-			info.createDiv({ cls: "filen-sync-version-title" })
+			info.createDiv({ cls: "filen-cloud-sync-version-title" })
 				.setText(`${when} — ${size}`);
 			if (version.isCurrent) {
-				info.createDiv({ cls: "filen-sync-version-badge" }).setText("Current version");
+				info.createDiv({ cls: "filen-cloud-sync-version-badge" }).setText("Current version");
 			} else if (!version.metadata) {
-				info.createDiv({ cls: "filen-sync-version-badge" }).setText("Metadata not decryptable");
+				info.createDiv({ cls: "filen-cloud-sync-version-badge" }).setText("Metadata not decryptable");
 			}
 			if (!version.isCurrent && version.metadata) {
 				new Setting(row).addButton(button => button
@@ -119,16 +119,16 @@ export class VersionHistoryModal extends Modal {
 		const metadata = version.metadata;
 		if (!metadata) return;
 		if (this.isSyncRunning()) {
-			new Notice("Filen sync is running — restore after it finishes");
+			new Notice("Filen Cloud Sync is running — restore after it finishes");
 			return;
 		}
 		// Stale-file guard: the file may have changed since this modal opened.
 		const fresh = this.app.vault.getFileByPath(this.file.path);
 		if (!fresh || fresh.stat.mtime !== this.file.stat.mtime) {
-			new Notice(`Filen sync: ${this.file.path} changed since the version list loaded — re-open version history`);
+			new Notice(`Filen Cloud Sync: ${this.file.path} changed since the version list loaded — re-open version history`);
 			return;
 		}
-		const notice = new Notice("Filen sync: restoring version…", 0);
+		const notice = new Notice("Filen Cloud Sync: restoring version…", 0);
 		try {
 			const { data, verified } = await this.client.downloadFile(
 				{
@@ -163,7 +163,7 @@ export class VersionHistoryModal extends Modal {
 			notice.hide();
 			const message = `version restore failed for ${this.file.path}: ${errMsg(e)}`;
 			this.log.error(message);
-			new Notice(`Filen sync: ${message}`);
+			new Notice(`Filen Cloud Sync: ${message}`);
 		}
 	}
 

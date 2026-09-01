@@ -9,11 +9,11 @@ import type { StoredCredentials } from "../filen/types";
 import { uuidv4 } from "../util";
 import type { BaseRecord, RemoteTree, RemoteTreeCache, SyncStateFile } from "./types";
 
-const STATE_KEY = "filen-sync/state";
-const CREDENTIALS_KEY = "filen-sync/credentials";
-const LOG_KEY = "filen-sync/log";
-const DEVICE_ID_KEY = "filen-sync/device-id";
-const SECRET_ID = "filen-sync-credentials";
+const STATE_KEY = "filen-cloud-sync/state";
+const CREDENTIALS_KEY = "filen-cloud-sync/credentials";
+const LOG_KEY = "filen-cloud-sync/log";
+const DEVICE_ID_KEY = "filen-cloud-sync/device-id";
+const SECRET_ID = "filen-cloud-sync-credentials";
 
 export const STATE_SCHEMA_VERSION = 1;
 

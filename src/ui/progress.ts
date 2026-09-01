@@ -35,17 +35,17 @@ export class SyncProgressModal extends Modal {
 	}
 
 	onOpen(): void {
-		this.setTitle("Filen sync");
-		const body = this.contentEl.createDiv({ cls: "filen-sync-progress" });
-		this.phaseEl = body.createDiv({ cls: "filen-sync-progress-phase" });
+		this.setTitle("Filen Cloud Sync");
+		const body = this.contentEl.createDiv({ cls: "filen-cloud-sync-progress" });
+		this.phaseEl = body.createDiv({ cls: "filen-cloud-sync-progress-phase" });
 		this.phaseEl.setText("Starting…");
-		this.barEl = body.createEl("progress", { cls: "filen-sync-progress-bar" });
+		this.barEl = body.createEl("progress", { cls: "filen-cloud-sync-progress-bar" });
 		this.barEl.max = 1;
 		this.barEl.value = 0;
-		this.counterEl = body.createDiv({ cls: "filen-sync-progress-counter" });
+		this.counterEl = body.createDiv({ cls: "filen-cloud-sync-progress-counter" });
 		// v0.6.0 feature C: per-file chunk detail under the counter.
-		this.detailEl = body.createDiv({ cls: "filen-sync-progress-detail" });
-		this.logEl = body.createDiv({ cls: "filen-sync-progress-log" });
+		this.detailEl = body.createDiv({ cls: "filen-cloud-sync-progress-detail" });
+		this.logEl = body.createDiv({ cls: "filen-cloud-sync-progress-log" });
 		const buttons = new Setting(body);
 		if (this.onShowLog) {
 			buttons.addButton(button => button
@@ -94,9 +94,9 @@ export class SyncProgressModal extends Modal {
 		if (!this.logEl) return;
 		this.logEl.empty();
 		for (const entry of this.log.getEntries().slice(-LOG_TAIL_LINES)) {
-			const line = this.logEl.createDiv({ cls: "filen-sync-progress-log-line" });
-			if (entry.level === "error") line.addClass("filen-sync-log-error");
-			if (entry.level === "warn" || entry.level === "conflict") line.addClass("filen-sync-log-warn");
+			const line = this.logEl.createDiv({ cls: "filen-cloud-sync-progress-log-line" });
+			if (entry.level === "error") line.addClass("filen-cloud-sync-log-error");
+			if (entry.level === "warn" || entry.level === "conflict") line.addClass("filen-cloud-sync-log-warn");
 			line.setText(entry.message);
 		}
 	}

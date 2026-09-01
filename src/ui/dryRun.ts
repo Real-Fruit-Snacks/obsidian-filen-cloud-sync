@@ -61,20 +61,20 @@ export class DryRunModal extends Modal {
 	onOpen(): void {
 		this.setTitle("Sync plan preview");
 		const { contentEl, plan } = this;
-		contentEl.addClass("filen-sync-dry-run");
+		contentEl.addClass("filen-cloud-sync-dry-run");
 
 		if (plan.seedMode) {
-			contentEl.createDiv({ cls: "filen-sync-dry-run-note" }).setText(seedNote(plan.seedMode));
+			contentEl.createDiv({ cls: "filen-cloud-sync-dry-run-note" }).setText(seedNote(plan.seedMode));
 		}
 		if (this.guardWouldAbort) {
-			contentEl.createDiv({ cls: "filen-sync-dry-run-guard" }).setText(
+			contentEl.createDiv({ cls: "filen-cloud-sync-dry-run-guard" }).setText(
 				"Warning: the mass-change guard would stop this run — review carefully.",
 			);
 		}
 
 		const visibleOps = plan.ops.filter(isVisibleOp);
 		if (visibleOps.length === 0 && plan.conflicts.length === 0) {
-			contentEl.createDiv({ cls: "filen-sync-dry-run-empty" })
+			contentEl.createDiv({ cls: "filen-cloud-sync-dry-run-empty" })
 				.setText("Everything is already in sync.");
 		} else {
 			this.renderCounts(contentEl);
@@ -105,29 +105,29 @@ export class DryRunModal extends Modal {
 			pluralize(c.renames, "rename"),
 			pluralize(c.conflicts, "conflict"),
 		];
-		contentEl.createDiv({ cls: "filen-sync-dry-run-counts" }).setText(parts.join(" · "));
+		contentEl.createDiv({ cls: "filen-cloud-sync-dry-run-counts" }).setText(parts.join(" · "));
 	}
 
 	private renderOpList(contentEl: HTMLElement, visibleOps: SyncOp[]): void {
-		const list = contentEl.createDiv({ cls: "filen-sync-dry-run-list" });
+		const list = contentEl.createDiv({ cls: "filen-cloud-sync-dry-run-list" });
 		for (const group of OP_GROUPS) {
 			const ops = visibleOps.filter(op => group.kinds.includes(op.kind));
 			if (ops.length === 0) continue;
-			list.createDiv({ cls: "filen-sync-dry-run-group" }).setText(group.title);
+			list.createDiv({ cls: "filen-cloud-sync-dry-run-group" }).setText(group.title);
 			for (const op of ops) {
-				const row = list.createDiv({ cls: "filen-sync-dry-run-op" });
-				row.createSpan({ cls: "filen-sync-dry-run-icon" }).setText(group.icon);
+				const row = list.createDiv({ cls: "filen-cloud-sync-dry-run-op" });
+				row.createSpan({ cls: "filen-cloud-sync-dry-run-icon" }).setText(group.icon);
 				const target = op.toPath ? `${op.path} -> ${op.toPath}` : op.path;
-				row.createSpan({ cls: "filen-sync-dry-run-label" }).setText(`${group.label} ${target}`);
+				row.createSpan({ cls: "filen-cloud-sync-dry-run-label" }).setText(`${group.label} ${target}`);
 			}
 		}
 		if (this.plan.conflicts.length > 0) {
-			list.createDiv({ cls: "filen-sync-dry-run-group" }).setText("Conflicts");
+			list.createDiv({ cls: "filen-cloud-sync-dry-run-group" }).setText("Conflicts");
 			for (const conflict of this.plan.conflicts) {
-				const row = list.createDiv({ cls: "filen-sync-dry-run-op" });
-				row.createSpan({ cls: "filen-sync-dry-run-icon" }).setText("CONF");
+				const row = list.createDiv({ cls: "filen-cloud-sync-dry-run-op" });
+				row.createSpan({ cls: "filen-cloud-sync-dry-run-icon" }).setText("CONF");
 				const winner = conflict.winner === "local" ? "this device wins" : "Filen wins";
-				row.createSpan({ cls: "filen-sync-dry-run-label" })
+				row.createSpan({ cls: "filen-cloud-sync-dry-run-label" })
 					.setText(`${conflict.path} — ${policyLabel(conflict.policy)} (${winner})`);
 			}
 		}

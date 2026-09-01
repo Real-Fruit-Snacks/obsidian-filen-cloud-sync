@@ -1,10 +1,10 @@
-# Filen Sync
+# Filen Cloud Sync
 
-![Filen Sync cover](docs/images/cover.png)
+![Filen Cloud Sync cover](docs/images/cover.png)
 
-<!-- Replace Real-Fruit-Snacks/obsidian-filen-sync with your GitHub path after creating the repo -->
-![CI](https://github.com/Real-Fruit-Snacks/obsidian-filen-sync/actions/workflows/ci.yml/badge.svg)
-![Release](https://img.shields.io/github/v/release/Real-Fruit-Snacks/obsidian-filen-sync)
+<!-- Replace Real-Fruit-Snacks/obsidian-filen-cloud-sync with your GitHub path after creating the repo -->
+![CI](https://github.com/Real-Fruit-Snacks/obsidian-filen-cloud-sync/actions/workflows/ci.yml/badge.svg)
+![Release](https://img.shields.io/github/v/release/Real-Fruit-Snacks/obsidian-filen-cloud-sync)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 
 Two-way sync between your Obsidian vault and [Filen](https://filen.io), a
@@ -100,7 +100,7 @@ No telemetry, no third-party servers, no analytics.
 
 ### Community directory (coming soon)
 
-Search "Filen Sync" in Obsidian's built-in community plugin browser once the
+Search "Filen Cloud Sync" in Obsidian's built-in community plugin browser once the
 plugin is accepted. Until then, use BRAT or the manual install below.
 
 ### BRAT (beta installs)
@@ -112,13 +112,13 @@ plugin is accepted. Until then, use BRAT or the manual install below.
 ### Manual
 
 1. Download `main.js`, `manifest.json` and `styles.css` from a release
-   (or unzip `filen-sync-0.6.0.zip`).
-2. Copy them into `<your vault>/.obsidian/plugins/filen-sync/`.
-3. Enable Community plugins in Obsidian, then enable **Filen Sync**.
+   (or unzip `filen-cloud-sync-0.6.0.zip`).
+2. Copy them into `<your vault>/.obsidian/plugins/filen-cloud-sync/`.
+3. Enable Community plugins in Obsidian, then enable **Filen Cloud Sync**.
 
 ## First run
 
-1. Open **Settings -> Filen Sync**.
+1. Open **Settings -> Filen Cloud Sync**.
 2. Enter your Filen email and password (plus your 2FA code if enabled) and
    press **Connect & verify**. The plugin derives your keys, verifies the
    login, and creates/resolves the remote folder
@@ -129,21 +129,21 @@ plugin is accepted. Until then, use BRAT or the manual install below.
    conflicts and both versions are kept
    (`name (conflict YYYY-MM-DD HHmm).ext`). The sync result notice shows how
    many files went each way.
-4. Edit a note, wait a few seconds (or run **Filen Sync: Sync now**), and
+4. Edit a note, wait a few seconds (or run **Filen Cloud Sync: Sync now**), and
    check your other device.
 
 Useful commands: `Sync now`, `Sync now (ignore mass-change guard)`,
 `Open sync dashboard` (also the ribbon icon), `Browse Filen version history`,
-`Unlock Filen sync` (memory-only mode), `Run Filen sync self-test`,
+`Unlock Filen Cloud Sync` (memory-only mode), `Run Filen Cloud Sync self-test`,
 `Reset local sync state`, `Show sync log`.
 
 ## Features in detail
 
 ### Ignored folders
 
-Add folders under **Settings -> Filen Sync -> Ignored folders** (type-ahead
+Add folders under **Settings -> Filen Cloud Sync -> Ignored folders** (type-ahead
 folder suggestions) or right-click a folder in the file explorer ->
-**Ignore in Filen sync**. Ignored folders are completely excluded from
+**Ignore in Filen Cloud Sync**. Ignored folders are completely excluded from
 syncing in **both** directions: local changes inside them are not uploaded,
 remote changes are not downloaded, and deletions never propagate in or out.
 Their sync base records are preserved, so removing a folder from the ignore
@@ -151,7 +151,7 @@ list later resumes syncing it cleanly (no conflict duplicates).
 
 ### Version history
 
-Run **Filen Sync: Browse Filen version history** (or right-click a file ->
+Run **Filen Cloud Sync: Browse Filen version history** (or right-click a file ->
 **Filen version history**) to list the versions Filen keeps for the current
 file, newest first. **Restore** downloads that version, verifies its
 SHA-512, and replaces the local file with the current time as mtime — so
@@ -160,9 +160,9 @@ version (your replaced content stays on Filen as a version, too).
 
 ### Memory-only credentials
 
-**Settings -> Filen Sync -> Memory-only credentials**: keys are kept only in
+**Settings -> Filen Cloud Sync -> Memory-only credentials**: keys are kept only in
 memory and never written to disk. Each Obsidian start begins **locked**
-(lock ribbon icon); run **Unlock Filen sync** and enter your password (+2FA)
+(lock ribbon icon); run **Unlock Filen Cloud Sync** and enter your password (+2FA)
 to unlock for the session. Enabling the toggle wipes any previously stored
 keys; disabling it offers to persist the unlocked keys or discard them.
 In this mode the remote-tree cache (which contains per-file content keys) is
@@ -190,7 +190,7 @@ transfer pool, so the counter counts completions, not chunk indices.
 
 ### Selective `.obsidian` config sync
 
-**Settings -> Filen Sync -> Sync Obsidian config folder** (off by default)
+**Settings -> Filen Cloud Sync -> Sync Obsidian config folder** (off by default)
 syncs an allowlist of files inside `.obsidian`. Friendly **preset toggles**
 cover the common items — appearance & theme selection, theme files
 (`themes`), hotkeys, CSS snippets, community/core plugin lists, and plugin
@@ -211,9 +211,9 @@ folders sync recursively). Everything not listed stays excluded. Caveats:
 
 ### Shared settings
 
-**Settings -> Filen Sync -> Share settings across devices** (off by default)
+**Settings -> Filen Cloud Sync -> Share settings across devices** (off by default)
 syncs a **curated subset** of settings between your devices via an encrypted
-`.filen-sync-preferences.json` file stored directly in the remote sync
+`.filen-cloud-sync-preferences.json` file stored directly in the remote sync
 folder. The synced keys are exactly:
 
 - **Conflict policy** (`keep both` / `keep newer`)
@@ -265,8 +265,8 @@ a warning instead of aborting, so you can review the full plan first.
 
 ### Setup transfer
 
-**Settings -> Filen Sync -> Setup transfer** copies your configuration to
-another device with a setup link (`filen-sync://setup/…`):
+**Settings -> Filen Cloud Sync -> Setup transfer** copies your configuration to
+another device with a setup link (`filen-cloud-sync://setup/…`):
 
 - **Export setup** shows a read-only link regenerated from your current
   settings, with a **Copy** button. The link contains the remote folder,
@@ -293,9 +293,9 @@ open (e.g. mobile), it stays quietly out of the way.
 
 ### Self-test
 
-**Run Filen sync self-test** checks your connection end to end without
+**Run Filen Cloud Sync self-test** checks your connection end to end without
 touching the vault or the sync state: account/quota lookup, creation of a
-throwaway `filen-sync-selftest-<random>` folder, an encrypted upload ->
+throwaway `filen-cloud-sync-selftest-<random>` folder, an encrypted upload ->
 download round-trip of 32 KiB random bytes verified by SHA-512, decryption
 of the plugin's own metadata, and cleanup (the test folder is trashed —
 best-effort even when a stage fails). The modal shows each stage with OK/FAILED
@@ -312,7 +312,7 @@ default 50 MB size limit (Settings -> Skip large files) is the mitigation.
 
 ### Fast remote polling
 
-**Settings -> Filen Sync -> Fast remote polling** (on by default) probes
+**Settings -> Filen Cloud Sync -> Fast remote polling** (on by default) probes
 Filen's events feed after each local scan. When the feed reports **no
 changes** since the last watermark, the full remote directory scan is
 skipped and the cached remote tree (at most **30 minutes** old) is reused
@@ -328,7 +328,7 @@ instead. Safety rails:
 
 ### Conflict merge view (ask mode)
 
-**Settings -> Filen Sync -> Conflict resolution -> Ask** pauses the sync on
+**Settings -> Filen Cloud Sync -> Conflict resolution -> Ask** pauses the sync on
 each text conflict (UTF-8-decodable, ≤ 1 MiB) and opens a side-by-side
 **Local vs Remote** view with line-diff highlighting. Buttons: **Keep
 local** (upload; the remote version goes to Filen trash), **Keep remote**
@@ -416,14 +416,14 @@ public-link features.
 
 ## Troubleshooting with the debug log
 
-When something goes wrong, enable **Settings -> Filen Sync -> Debug log**, then
+When something goes wrong, enable **Settings -> Filen Cloud Sync -> Debug log**, then
 open the developer console and reproduce the problem:
 
 - **Desktop:** `Ctrl+Shift+I` (Windows/Linux) or `Cmd+Opt+I` (macOS) -> Console tab
 - **Android:** `chrome://inspect` on a connected desktop (USB debugging)
 - **iOS:** Safari -> Develop menu -> Web Inspector (macOS required)
 
-Every line is prefixed `[filen-sync]` and tagged by area:
+Every line is prefixed `[filen-cloud-sync]` and tagged by area:
 
 | Tag | What it shows |
 |---|---|
@@ -436,7 +436,7 @@ Every line is prefixed `[filen-sync]` and tagged by area:
 file keys, upload keys, request bodies, or `Authorization` headers. Vault file
 paths **are** included — don't paste logs into public places without reviewing
 them first. Debug mode also records verbose "info" entries into the persisted
-sync log (command: *Filen Sync: Show sync log*). Turn the toggle off again for
+sync log (command: *Filen Cloud Sync: Show sync log*). Turn the toggle off again for
 daily use.
 
 ## Development
@@ -446,7 +446,7 @@ npm install
 npm run build   # tsc type-check + esbuild production bundle (main.js)
 npm run test    # vitest: crypto, planner decision table, client request shapes, utils
 npm run lint    # eslint + eslint-plugin-obsidianmd
-npm run package # build + dist/filen-sync/ + dist/filen-sync-0.6.0.zip
+npm run package # build + dist/filen-cloud-sync/ + dist/filen-cloud-sync-0.6.0.zip
 ```
 
 The Filen client is a minimal pure-TypeScript reimplementation

@@ -7,7 +7,7 @@
  *   DOM-free, fully unit-testable. Tracks vault paths changed locally
  *   since the last fully successful sync.
  *
- * - `ExplorerDecorations` — the thin DOM layer. Adds the `filen-sync-dirty`
+ * - `ExplorerDecorations` — the thin DOM layer. Adds the `filen-cloud-sync-dirty`
  *   class + a tooltip to `.nav-file-title[data-path="…"]` elements for
  *   every dirty path, and reapplies them via a MutationObserver whenever
  *   Obsidian re-renders the file-explorer tree. EVERYTHING is defensive:
@@ -25,7 +25,7 @@
 import { normalizeVaultPath } from "../util";
 
 /** CSS class + tooltip applied to dirty file-explorer rows. */
-export const DIRTY_CLASS = "filen-sync-dirty";
+export const DIRTY_CLASS = "filen-cloud-sync-dirty";
 export const DIRTY_TITLE = "Changed since last sync";
 
 /* ---------------- pure set logic (unit-tested) ---------------- */

@@ -192,14 +192,14 @@ describe("config dir sync (v0.4.0 feature A)", () => {
 describe("localScan shared-preferences exclusion (v0.5.0)", () => {
 	it("excludes the root-level prefs file even with dotfiles ALLOWED", async () => {
 		const tree = await scanLocalVault(fakeVault([
-			{ path: ".filen-sync-preferences.json", size: 10 },
+			{ path: ".filen-cloud-sync-preferences.json", size: 10 },
 			{ path: ".other-dotfile", size: 10 },
 			{ path: "note.md", size: 10 },
 		]), { ...baseOpts, excludeDotFiles: false });
 		// Hard reserved exclusion — never synced as vault content.
-		expect(tree.files.has(".filen-sync-preferences.json")).toBe(false);
-		expect(tree.excluded.has(".filen-sync-preferences.json")).toBe(true);
-		expect(tree.skipped.some(s => s.path === ".filen-sync-preferences.json"
+		expect(tree.files.has(".filen-cloud-sync-preferences.json")).toBe(false);
+		expect(tree.excluded.has(".filen-cloud-sync-preferences.json")).toBe(true);
+		expect(tree.skipped.some(s => s.path === ".filen-cloud-sync-preferences.json"
 			&& s.reason === "sync preferences file")).toBe(true);
 		// Regular dotfiles still follow the toggle.
 		expect(tree.files.has(".other-dotfile")).toBe(true);
@@ -208,16 +208,16 @@ describe("localScan shared-preferences exclusion (v0.5.0)", () => {
 
 	it("excludes the prefs file with dotfiles excluded too", async () => {
 		const tree = await scanLocalVault(fakeVault([
-			{ path: ".filen-sync-preferences.json", size: 10 },
+			{ path: ".filen-cloud-sync-preferences.json", size: 10 },
 		]), baseOpts);
-		expect(tree.files.has(".filen-sync-preferences.json")).toBe(false);
-		expect(tree.excluded.has(".filen-sync-preferences.json")).toBe(true);
+		expect(tree.files.has(".filen-cloud-sync-preferences.json")).toBe(false);
+		expect(tree.excluded.has(".filen-cloud-sync-preferences.json")).toBe(true);
 	});
 
 	it("only the exact ROOT-level name is reserved — nested lookalikes sync", async () => {
 		const tree = await scanLocalVault(fakeVault([
-			{ path: "sub/.filen-sync-preferences.json", size: 10 },
+			{ path: "sub/.filen-cloud-sync-preferences.json", size: 10 },
 		]), { ...baseOpts, excludeDotFiles: false });
-		expect(tree.files.has("sub/.filen-sync-preferences.json")).toBe(true);
+		expect(tree.files.has("sub/.filen-cloud-sync-preferences.json")).toBe(true);
 	});
 });

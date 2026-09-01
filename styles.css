@@ -1,51 +1,51 @@
-/* filen-sync styles */
+/* filen-cloud-sync styles */
 
-.filen-sync-statusbar {
+.filen-cloud-sync-statusbar {
 	cursor: pointer;
 }
 
-.filen-sync-statusbar.filen-sync-error {
+.filen-cloud-sync-statusbar.filen-cloud-sync-error {
 	color: var(--text-error);
 }
 
-.filen-sync-settings .filen-sync-connected {
+.filen-cloud-sync-settings .filen-cloud-sync-connected {
 	color: var(--text-success);
 	font-weight: var(--font-semibold);
 }
 
-.filen-sync-settings .filen-sync-warning {
+.filen-cloud-sync-settings .filen-cloud-sync-warning {
 	color: var(--text-warning);
 }
 
-.filen-sync-log-view {
+.filen-cloud-sync-log-view {
 	font-family: var(--font-monospace);
 	font-size: var(--font-ui-smaller);
 	white-space: pre-wrap;
 	user-select: text;
 }
 
-.filen-sync-log-entry.filen-sync-log-error {
+.filen-cloud-sync-log-entry.filen-cloud-sync-log-error {
 	color: var(--text-error);
 }
 
-.filen-sync-log-entry.filen-sync-log-warn {
+.filen-cloud-sync-log-entry.filen-cloud-sync-log-warn {
 	color: var(--text-warning);
 }
 
 /* Ignored folder chips (settings) */
-.filen-sync-ignored-list {
+.filen-cloud-sync-ignored-list {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 6px;
 	margin: 4px 0 12px;
 }
 
-.filen-sync-ignored-empty {
+.filen-cloud-sync-ignored-empty {
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
 }
 
-.filen-sync-ignored-chip {
+.filen-cloud-sync-ignored-chip {
 	display: flex;
 	align-items: center;
 	gap: 6px;
@@ -55,23 +55,23 @@
 	font-size: var(--font-ui-smaller);
 }
 
-.filen-sync-ignored-remove {
+.filen-cloud-sync-ignored-remove {
 	padding: 0 6px;
 	cursor: pointer;
 }
 
 /* Sync progress modal */
-.filen-sync-progress-phase {
+.filen-cloud-sync-progress-phase {
 	font-weight: var(--font-semibold);
 	margin-bottom: 6px;
 }
 
-.filen-sync-progress-bar {
+.filen-cloud-sync-progress-bar {
 	width: 100%;
 	height: 8px;
 }
 
-.filen-sync-progress-counter {
+.filen-cloud-sync-progress-counter {
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
 	margin: 6px 0;
@@ -79,17 +79,17 @@
 }
 
 /* Per-file chunk detail (v0.6.0 feature C) — hidden while empty. */
-.filen-sync-progress-detail {
+.filen-cloud-sync-progress-detail {
 	color: var(--text-faint);
 	font-size: var(--font-ui-smaller);
 	margin: -4px 0 6px;
 }
 
-.filen-sync-progress-detail:empty {
+.filen-cloud-sync-progress-detail:empty {
 	display: none;
 }
 
-.filen-sync-progress-log {
+.filen-cloud-sync-progress-log {
 	font-family: var(--font-monospace);
 	font-size: var(--font-ui-smaller);
 	white-space: pre-wrap;
@@ -100,7 +100,7 @@
 }
 
 /* Version history modal */
-.filen-sync-version-row {
+.filen-cloud-sync-version-row {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -109,28 +109,28 @@
 	border-bottom: 1px solid var(--background-modifier-border);
 }
 
-.filen-sync-version-title {
+.filen-cloud-sync-version-title {
 	user-select: text;
 }
 
-.filen-sync-version-badge {
+.filen-cloud-sync-version-badge {
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
 }
 
 /* Unlock modal */
-.filen-sync-unlock-error {
+.filen-cloud-sync-unlock-error {
 	color: var(--text-error);
 	min-height: 1.2em;
 }
 
 /* Self-test modal (v0.4.0 feature B) */
-.filen-sync-selftest-summary {
+.filen-cloud-sync-selftest-summary {
 	margin-bottom: 8px;
 	font-weight: var(--font-medium);
 }
 
-.filen-sync-selftest-row {
+.filen-cloud-sync-selftest-row {
 	display: flex;
 	align-items: baseline;
 	gap: 8px;
@@ -139,63 +139,63 @@
 	flex-wrap: wrap;
 }
 
-.filen-sync-selftest-mark {
+.filen-cloud-sync-selftest-mark {
 	width: 1.2em;
 	font-weight: var(--font-bold);
 }
 
-.filen-sync-selftest-mark.filen-sync-selftest-ok {
+.filen-cloud-sync-selftest-mark.filen-cloud-sync-selftest-ok {
 	color: var(--text-success);
 }
 
-.filen-sync-selftest-label {
+.filen-cloud-sync-selftest-label {
 	flex: 1;
 }
 
-.filen-sync-selftest-detail {
+.filen-cloud-sync-selftest-detail {
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
 }
 
-.filen-sync-selftest-error {
+.filen-cloud-sync-selftest-error {
 	flex-basis: 100%;
 	font-size: var(--font-ui-smaller);
 	user-select: text;
 }
 
 /* Conflict merge modal (v0.4.0 feature E) */
-.filen-sync-merge-header {
+.filen-cloud-sync-merge-header {
 	margin-bottom: 8px;
 }
 
-.filen-sync-merge-path {
+.filen-cloud-sync-merge-path {
 	font-weight: var(--font-semibold);
 	word-break: break-all;
 	user-select: text;
 }
 
-.filen-sync-merge-meta {
+.filen-cloud-sync-merge-meta {
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
 	margin-top: 2px;
 	user-select: text;
 }
 
-.filen-sync-merge-columns {
+.filen-cloud-sync-merge-columns {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 8px;
 	margin-bottom: 8px;
 }
 
-.filen-sync-merge-col {
+.filen-cloud-sync-merge-col {
 	min-width: 0;
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 6px;
 	overflow: hidden;
 }
 
-.filen-sync-merge-col-head {
+.filen-cloud-sync-merge-col-head {
 	padding: 4px 8px;
 	font-weight: var(--font-semibold);
 	font-size: var(--font-ui-smaller);
@@ -203,146 +203,146 @@
 	border-bottom: 1px solid var(--background-modifier-border);
 }
 
-.filen-sync-merge-lines {
+.filen-cloud-sync-merge-lines {
 	max-height: 320px;
 	overflow: auto;
 	font-family: var(--font-monospace);
 	font-size: var(--font-ui-smaller);
 }
 
-.filen-sync-merge-line {
+.filen-cloud-sync-merge-line {
 	padding: 0 8px;
 	white-space: pre-wrap;
 	word-break: break-all;
 	user-select: text;
 }
 
-.filen-sync-merge-line.filen-sync-merge-removed {
+.filen-cloud-sync-merge-line.filen-cloud-sync-merge-removed {
 	background: var(--background-modifier-error);
 }
 
-.filen-sync-merge-line.filen-sync-merge-added {
+.filen-cloud-sync-merge-line.filen-cloud-sync-merge-added {
 	background: var(--background-modifier-success);
 }
 
-.filen-sync-merge-line.filen-sync-merge-blank {
+.filen-cloud-sync-merge-line.filen-cloud-sync-merge-blank {
 	background: var(--background-secondary-alt);
 }
 
-.filen-sync-merge-truncated {
+.filen-cloud-sync-merge-truncated {
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
 	margin: 4px 0 8px;
 }
 
 /* Status dashboard (v0.4.0 feature F) */
-.filen-sync-dashboard {
+.filen-cloud-sync-dashboard {
 	padding: 8px 12px;
 }
 
-.filen-sync-dashboard-heading {
+.filen-cloud-sync-dashboard-heading {
 	margin: 14px 0 4px;
 	font-size: var(--font-ui-medium);
 }
 
-.filen-sync-dashboard-heading:first-child {
+.filen-cloud-sync-dashboard-heading:first-child {
 	margin-top: 4px;
 }
 
-.filen-sync-dashboard-section {
+.filen-cloud-sync-dashboard-section {
 	font-size: var(--font-ui-small);
 	user-select: text;
 }
 
-.filen-sync-dashboard-muted {
+.filen-cloud-sync-dashboard-muted {
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
 }
 
-.filen-sync-dashboard-conflict {
+.filen-cloud-sync-dashboard-conflict {
 	font-family: var(--font-monospace);
 	font-size: var(--font-ui-smaller);
 	word-break: break-all;
 }
 
-.filen-sync-dashboard-quota-bar {
+.filen-cloud-sync-dashboard-quota-bar {
 	width: 100%;
 	height: 6px;
 	margin-top: 4px;
 }
 
-.filen-sync-dashboard-buttons {
+.filen-cloud-sync-dashboard-buttons {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
 	margin-top: 16px;
 }
 
-.filen-sync-dashboard-button {
+.filen-cloud-sync-dashboard-button {
 	width: 100%;
 }
-.filen-sync-disabled {
+.filen-cloud-sync-disabled {
     opacity: 0.55;
 }
 
 /* Dry-run plan preview modal (v0.6.0 feature A) */
-.filen-sync-dry-run-note {
+.filen-cloud-sync-dry-run-note {
 	color: var(--text-muted);
 	margin-bottom: 8px;
 }
 
-.filen-sync-dry-run-guard {
+.filen-cloud-sync-dry-run-guard {
 	color: var(--text-warning);
 	font-weight: var(--font-semibold);
 	margin-bottom: 8px;
 }
 
-.filen-sync-dry-run-counts {
+.filen-cloud-sync-dry-run-counts {
 	margin: 6px 0;
 	user-select: text;
 }
 
-.filen-sync-dry-run-empty {
+.filen-cloud-sync-dry-run-empty {
 	color: var(--text-muted);
 	margin: 12px 0;
 }
 
-.filen-sync-dry-run-list {
+.filen-cloud-sync-dry-run-list {
 	max-height: 300px;
 	overflow-y: auto;
 	margin-bottom: 8px;
 	user-select: text;
 }
 
-.filen-sync-dry-run-group {
+.filen-cloud-sync-dry-run-group {
 	font-weight: var(--font-semibold);
 	margin-top: 8px;
 }
 
-.filen-sync-dry-run-op {
+.filen-cloud-sync-dry-run-op {
 	display: flex;
 	gap: 6px;
 	padding: 2px 0;
 }
 
-.filen-sync-dry-run-icon {
+.filen-cloud-sync-dry-run-icon {
 	flex: 0 0 auto;
 	width: 1.2em;
 	text-align: center;
 }
 
-.filen-sync-dry-run-label {
+.filen-cloud-sync-dry-run-label {
 	word-break: break-all;
 }
 
 /* Setup transfer (v0.6.0 feature B) */
-.filen-sync-setup-uri {
+.filen-cloud-sync-setup-uri {
 	font-family: var(--font-monospace);
 	font-size: var(--font-ui-smaller);
 }
 
 /* Explorer "changed since last sync" dot (v0.6.0 feature D) */
-.filen-sync-dirty .nav-file-title-content::after {
+.filen-cloud-sync-dirty .nav-file-title-content::after {
 	content: "";
 	display: inline-block;
 	width: 6px;

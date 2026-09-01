@@ -23,7 +23,7 @@ describe("debug logger", () => {
 		debugLog("http", "POST /v3/login → HTTP 200");
 		expect(spy).toHaveBeenCalledOnce();
 		const first = String(spy.mock.calls[0]?.[0]);
-		expect(first).toContain("[filen-sync]");
+		expect(first).toContain("[filen-cloud-sync]");
 		expect(first).toContain("[http]");
 		expect(first).toContain("POST /v3/login → HTTP 200");
 		expect(isDebugLogging()).toBe(true);

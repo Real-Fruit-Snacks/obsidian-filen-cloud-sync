@@ -1,5 +1,5 @@
 /**
- * filen-sync — two-way sync between an Obsidian vault and Filen
+ * filen-cloud-sync — two-way sync between an Obsidian vault and Filen
  * (zero-knowledge E2EE cloud). Desktop + mobile. See the design docs.
  */
 
@@ -128,15 +128,15 @@ export default class FilenSyncPlugin extends Plugin {
 			callback: () => void this.runSync({ manual: true, dryRun: true }),
 		});
 		this.addCommand({
-			id: "unlock-filen-sync",
-			name: "Unlock Filen sync",
+			id: "unlock-filen-cloud-sync",
+			name: "Unlock Filen Cloud Sync",
 			callback: () => {
 				if (!this.settings.memoryOnlyCredentials) {
 					new Notice("Memory-only mode is off — connect in settings instead");
 					return;
 				}
 				if (!this.isLocked()) {
-					new Notice("Filen sync is already unlocked");
+					new Notice("Filen Cloud Sync is already unlocked");
 					return;
 				}
 				this.openUnlockModal();
@@ -148,7 +148,7 @@ export default class FilenSyncPlugin extends Plugin {
 			callback: () => {
 				const file = this.app.workspace.getActiveFile();
 				if (!file) {
-					new Notice("Filen sync: open a file first");
+					new Notice("Filen Cloud Sync: open a file first");
 					return;
 				}
 				void this.openVersionHistory(file);
@@ -162,7 +162,7 @@ export default class FilenSyncPlugin extends Plugin {
 				clearLog(this.app);
 				clearDeviceId(this.app);
 				this.syncLog.clear();
-				new Notice("Filen sync state reset — next sync runs as a fresh seed");
+				new Notice("Filen Cloud Sync state reset — next sync runs as a fresh seed");
 			},
 		});
 		this.addCommand({
@@ -172,7 +172,7 @@ export default class FilenSyncPlugin extends Plugin {
 		});
 		this.addCommand({
 			id: "run-self-test",
-			name: "Run Filen sync self-test",
+			name: "Run Filen Cloud Sync self-test",
 			callback: () => this.openSelfTest(),
 		});
 
@@ -184,7 +184,7 @@ export default class FilenSyncPlugin extends Plugin {
 				if (path.length === 0) return;
 				const ignored = this.settings.ignoredFolders.includes(path);
 				menu.addItem(item => item
-					.setTitle(ignored ? "Remove from Filen ignore list" : "Ignore in Filen sync")
+					.setTitle(ignored ? "Remove from Filen ignore list" : "Ignore in Filen Cloud Sync")
 					.setIcon("cloud-off")
 					.onClick(() => {
 						if (ignored) {
@@ -208,7 +208,7 @@ export default class FilenSyncPlugin extends Plugin {
 
 		this.ribbonEl = this.addRibbonIcon(
 			this.isLocked() ? "lock" : "cloud",
-			this.isLocked() ? "Filen sync: unlock" : "Filen sync: dashboard",
+			this.isLocked() ? "Filen Cloud Sync: unlock" : "Filen Cloud Sync: dashboard",
 			() => {
 				// Locked keeps the unlock behavior; otherwise the ribbon toggles
 				// the dashboard leaf (v0.4.0 feature F).
@@ -219,7 +219,7 @@ export default class FilenSyncPlugin extends Plugin {
 
 		if (Platform.isDesktopApp) {
 			this.statusBarItem = this.addStatusBarItem();
-			this.statusBarItem.addClass("filen-sync-statusbar");
+			this.statusBarItem.addClass("filen-cloud-sync-statusbar");
 			this.updateStatusBar("idle");
 		}
 
@@ -317,7 +317,7 @@ export default class FilenSyncPlugin extends Plugin {
 				credentials.rootUuid, chain, loadDeviceId(this.app),
 			);
 			this.setMemoryCredentials(credentials);
-			new Notice(`Filen sync unlocked as ${this.settings.email}`);
+			new Notice(`Filen Cloud Sync unlocked as ${this.settings.email}`);
 			this.onConnected();
 		}).open();
 	}
@@ -326,7 +326,7 @@ export default class FilenSyncPlugin extends Plugin {
 		if (!this.ribbonEl) return;
 		const locked = this.isLocked();
 		setIcon(this.ribbonEl, locked ? "lock" : "cloud");
-		this.ribbonEl.setAttribute("aria-label", locked ? "Filen sync: unlock" : "Filen sync: dashboard");
+		this.ribbonEl.setAttribute("aria-label", locked ? "Filen Cloud Sync: unlock" : "Filen Cloud Sync: dashboard");
 	}
 
 	/* ---------------- status dashboard (v0.4.0 feature F) ---------------- */
@@ -383,7 +383,7 @@ export default class FilenSyncPlugin extends Plugin {
 					setting?: { open(): void; openTabById(id: string): void };
 				}).setting;
 				setting?.open();
-				setting?.openTabById("filen-sync");
+				setting?.openTabById("filen-cloud-sync");
 			},
 			onShowLog: () => new SyncLogModal(this.app, this.syncLog, () => this.lastRunSummary()).open(),
 		};
@@ -394,7 +394,7 @@ export default class FilenSyncPlugin extends Plugin {
 	private async openVersionHistory(file: TFile): Promise<void> {
 		const credentials = this.memoryCredentials ?? loadCredentials(this.app);
 		if (!credentials) {
-			new Notice("Filen sync: not connected — connect your Filen account in settings");
+			new Notice("Filen Cloud Sync: not connected — connect your Filen account in settings");
 			return;
 		}
 		const path = normalizeVaultPath(file.path);
@@ -402,7 +402,7 @@ export default class FilenSyncPlugin extends Plugin {
 		if (!record) {
 			const message = `${path} is not synced yet — sync first`;
 			this.syncLog.warn(`version history: ${message}`);
-			new Notice(`Filen sync: ${message}`);
+			new Notice(`Filen Cloud Sync: ${message}`);
 			return;
 		}
 		this.client.setCredentials(credentials);
@@ -415,7 +415,7 @@ export default class FilenSyncPlugin extends Plugin {
 		} catch (e) {
 			const message = `could not load versions for ${path}: ${errMsg(e)}`;
 			this.syncLog.error(message);
-			new Notice(`Filen sync: ${message}`);
+			new Notice(`Filen Cloud Sync: ${message}`);
 		}
 	}
 
@@ -424,7 +424,7 @@ export default class FilenSyncPlugin extends Plugin {
 	private openSelfTest(): void {
 		const credentials = this.memoryCredentials ?? loadCredentials(this.app);
 		if (!credentials) {
-			new Notice("Filen sync: not connected — connect your Filen account in settings");
+			new Notice("Filen Cloud Sync: not connected — connect your Filen account in settings");
 			return;
 		}
 		this.client.setCredentials(credentials);
@@ -483,7 +483,7 @@ export default class FilenSyncPlugin extends Plugin {
 	 */
 	private friendlyNotice(rawMessage: string, prefix?: string): void {
 		const friendly = friendlyError(rawMessage);
-		const lead = prefix ? `${prefix}: ` : "Filen sync: ";
+		const lead = prefix ? `${prefix}: ` : "Filen Cloud Sync: ";
 		new Notice(friendly.hint ? `${lead}${friendly.title} — ${friendly.hint}` : `${lead}${friendly.title}`);
 	}
 
@@ -496,14 +496,14 @@ export default class FilenSyncPlugin extends Plugin {
 			// Locked: one Notice per manual run, and only the first auto run —
 			// no retry spam while locked.
 			if (options.manual || !this.lockedNoticeShown) {
-				new Notice("Filen Sync is locked — run 'Unlock Filen sync'");
+				new Notice("Filen Cloud Sync is locked — run 'Unlock Filen Cloud Sync'");
 				this.lockedNoticeShown = true;
 			}
 			return;
 		}
 		if (options.manual && this.engine.isRunning) {
 			// Join the single-flight queue without opening a second (dead) modal.
-			new Notice("Filen sync already running — queued");
+			new Notice("Filen Cloud Sync already running — queued");
 			void this.engine.run(options);
 			return;
 		}
@@ -523,12 +523,12 @@ export default class FilenSyncPlugin extends Plugin {
 						() => void this.runSync({ manual: true }),
 					).open();
 				} else if (result.status === "error") {
-					this.friendlyNotice(result.message, "Filen sync failed");
+					this.friendlyNotice(result.message, "Filen Cloud Sync failed");
 				}
 			} catch (e) {
 				const message = e instanceof Error ? e.message : String(e);
 				this.syncLog.error(`dry run crashed: ${message}`);
-				new Notice(`Filen sync failed: ${message}`);
+				new Notice(`Filen Cloud Sync failed: ${message}`);
 				this.updateStatusBar("error");
 			}
 			return;
@@ -556,12 +556,12 @@ export default class FilenSyncPlugin extends Plugin {
 					&& (result.opFailures ?? 0) === 0
 					&& (result.plan?.conflicts.length ?? 0) === 0;
 				modal.finish(result.message, clean);
-				if (result.status === "error") this.friendlyNotice(result.message, "Filen sync failed");
-				else if (result.status === "aborted") this.friendlyNotice(result.message, "Filen sync aborted");
+				if (result.status === "error") this.friendlyNotice(result.message, "Filen Cloud Sync failed");
+				else if (result.status === "aborted") this.friendlyNotice(result.message, "Filen Cloud Sync aborted");
 			} else if (result.status === "error") {
 				// Auto runs: surface a Notice only on the ok→error transition
 				// (rate-limited, not every failing run); status bar always updates.
-				if (previousStatus !== "error") this.friendlyNotice(result.message, "Filen sync failed");
+				if (previousStatus !== "error") this.friendlyNotice(result.message, "Filen Cloud Sync failed");
 			}
 			this.updateStatusBar(result.status === "error" ? "error" : "idle");
 			// v0.5.0: post-run shared-prefs check on the run's own remote tree
@@ -584,7 +584,7 @@ export default class FilenSyncPlugin extends Plugin {
 			const message = e instanceof Error ? e.message : String(e);
 			this.syncLog.error(`sync crashed: ${message}`);
 			modal?.finish(`failed: ${message}`, false);
-			if (options.manual || previousStatus !== "error") new Notice(`Filen sync failed: ${message}`);
+			if (options.manual || previousStatus !== "error") new Notice(`Filen Cloud Sync failed: ${message}`);
 			this.lastSyncResult = { status: "error", message };
 			this.lastSyncFinishedAt = Date.now();
 			this.updateStatusBar("error");
@@ -594,18 +594,18 @@ export default class FilenSyncPlugin extends Plugin {
 
 	private updateStatusBar(state: "idle" | "running" | "error"): void {
 		if (!this.statusBarItem) return;
-		this.statusBarItem.removeClass("filen-sync-error");
+		this.statusBarItem.removeClass("filen-cloud-sync-error");
 		if (state === "running") {
 			this.statusBarItem.setText("Filen: syncing…");
 		} else if (state === "error") {
-			this.statusBarItem.addClass("filen-sync-error");
+			this.statusBarItem.addClass("filen-cloud-sync-error");
 			const detail = this.lastSyncResult ? ` — ${this.lastSyncResult.message}` : "";
 			this.statusBarItem.setText("Filen: error");
-			this.statusBarItem.setAttribute("aria-label", `Filen sync error${detail}`);
+			this.statusBarItem.setAttribute("aria-label", `Filen Cloud Sync error${detail}`);
 		} else {
 			this.statusBarItem.setText("Filen: idle");
 			if (this.lastSyncResult) {
-				this.statusBarItem.setAttribute("aria-label", `Filen sync: ${this.lastSyncResult.message}`);
+				this.statusBarItem.setAttribute("aria-label", `Filen Cloud Sync: ${this.lastSyncResult.message}`);
 			}
 		}
 	}
@@ -621,7 +621,7 @@ class SyncLogModal extends Modal {
 	}
 
 	onOpen(): void {
-		this.setTitle("Filen sync log");
+		this.setTitle("Filen Cloud Sync log");
 		this.render();
 	}
 
@@ -631,7 +631,7 @@ class SyncLogModal extends Modal {
 		// Header: last-run summary + actions.
 		const lastRun = this.getLastRun();
 		if (lastRun) {
-			const summary = this.contentEl.createDiv({ cls: "filen-sync-log-summary" });
+			const summary = this.contentEl.createDiv({ cls: "filen-cloud-sync-log-summary" });
 			summary.setText(`Last sync: ${relativeTime(lastRun.finishedAt)} — ${lastRun.message}`);
 		}
 		new Setting(this.contentEl)
@@ -652,16 +652,16 @@ class SyncLogModal extends Modal {
 				.setButtonText("Close")
 				.onClick(() => this.close()));
 
-		const view = this.contentEl.createDiv({ cls: "filen-sync-log-view" });
+		const view = this.contentEl.createDiv({ cls: "filen-cloud-sync-log-view" });
 		const entries = this.log.getEntries();
 		if (entries.length === 0) {
 			view.setText("Nothing logged yet — run a sync and entries will appear here.");
 			return;
 		}
 		for (const entry of entries.slice().reverse()) {
-			const line = view.createDiv({ cls: "filen-sync-log-entry" });
-			if (entry.level === "error") line.addClass("filen-sync-log-error");
-			if (entry.level === "warn" || entry.level === "conflict") line.addClass("filen-sync-log-warn");
+			const line = view.createDiv({ cls: "filen-cloud-sync-log-entry" });
+			if (entry.level === "error") line.addClass("filen-cloud-sync-log-error");
+			if (entry.level === "warn" || entry.level === "conflict") line.addClass("filen-cloud-sync-log-warn");
 			line.setText(
 				`${new Date(entry.ts).toLocaleString()}  ${entry.level.toUpperCase()}  ${entry.message}`,
 			);

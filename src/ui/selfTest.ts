@@ -3,7 +3,7 @@
  * Filen account — auth/quota, folder create, an upload→tree→download SHA-512
  * round-trip of 32 KiB random bytes, own-metadata decrypt interop, and
  * trash cleanup. NEVER touches the vault or the sync state; all remote
- * artifacts live in a throwaway `filen-sync-selftest-<rand>` folder that is
+ * artifacts live in a throwaway `filen-cloud-sync-selftest-<rand>` folder that is
  * trashed best-effort even when a stage fails. The first failure aborts the
  * remaining stages and surfaces the exact error.
  */
@@ -90,7 +90,7 @@ export async function runSelfTest(client: FilenClient, deps: SelfTestDeps): Prom
 					break;
 				}
 				case 1: {
-					const name = `filen-sync-selftest-${randomString(8).toLowerCase()}`;
+					const name = `filen-cloud-sync-selftest-${randomString(8).toLowerCase()}`;
 					folderUuid = await client.dirCreate(name, deps.rootUuid);
 					stage.detail = name;
 					break;
@@ -129,7 +129,7 @@ export async function runSelfTest(client: FilenClient, deps: SelfTestDeps): Prom
 					const folderTuple = tree.folders.find(f => f[0] === folderUuid);
 					if (!folderTuple) throw new Error("test folder not visible in dir tree");
 					const folderName = await client.decryptFolderName(folderTuple[1]);
-					if (!folderName.startsWith("filen-sync-selftest-")) {
+					if (!folderName.startsWith("filen-cloud-sync-selftest-")) {
 						throw new Error(`folder name metadata mismatch: ${folderName}`);
 					}
 					const fileTuple = tree.files.find(f => f[4] === folderUuid);
@@ -205,11 +205,11 @@ export class SelfTestModal extends Modal {
 	}
 
 	onOpen(): void {
-		this.setTitle("Filen sync self-test");
-		const body = this.contentEl.createDiv({ cls: "filen-sync-selftest" });
-		this.summaryEl = body.createDiv({ cls: "filen-sync-selftest-summary" });
+		this.setTitle("Filen Cloud Sync self-test");
+		const body = this.contentEl.createDiv({ cls: "filen-cloud-sync-selftest" });
+		this.summaryEl = body.createDiv({ cls: "filen-cloud-sync-selftest-summary" });
 		this.summaryEl.setText("Running self-test…");
-		this.listEl = body.createDiv({ cls: "filen-sync-selftest-list" });
+		this.listEl = body.createDiv({ cls: "filen-cloud-sync-selftest-list" });
 		new Setting(body)
 			.addButton(button => button
 				.setButtonText("Close")
@@ -226,11 +226,11 @@ export class SelfTestModal extends Modal {
 				this.summaryEl?.setText("All checks passed");
 			} else {
 				this.summaryEl?.setText(`Self-test failed — ${report.error ?? "unknown error"}`);
-				this.summaryEl?.addClass("filen-sync-log-error");
+				this.summaryEl?.addClass("filen-cloud-sync-log-error");
 			}
 		}).catch((e: unknown) => {
 			this.summaryEl?.setText(`Self-test crashed: ${errMsg(e)}`);
-			this.summaryEl?.addClass("filen-sync-log-error");
+			this.summaryEl?.addClass("filen-cloud-sync-log-error");
 		});
 	}
 
@@ -238,22 +238,22 @@ export class SelfTestModal extends Modal {
 		if (!this.listEl) return;
 		this.listEl.empty();
 		for (const [index, stage] of [...this.latest.entries()].sort((a, b) => a[0] - b[0])) {
-			const row = this.listEl.createDiv({ cls: "filen-sync-selftest-row" });
+			const row = this.listEl.createDiv({ cls: "filen-cloud-sync-selftest-row" });
 			const mark = stage.status === "ok" ? "PASS"
 				: stage.status === "failed" ? "FAIL"
 					: stage.status === "running" ? "RUN" : "WAIT";
-			const markEl = row.createSpan({ cls: "filen-sync-selftest-mark" });
+			const markEl = row.createSpan({ cls: "filen-cloud-sync-selftest-mark" });
 			markEl.setText(mark);
-			if (stage.status === "failed") markEl.addClass("filen-sync-log-error");
-			if (stage.status === "ok") markEl.addClass("filen-sync-selftest-ok");
-			const label = row.createSpan({ cls: "filen-sync-selftest-label" });
+			if (stage.status === "failed") markEl.addClass("filen-cloud-sync-log-error");
+			if (stage.status === "ok") markEl.addClass("filen-cloud-sync-selftest-ok");
+			const label = row.createSpan({ cls: "filen-cloud-sync-selftest-label" });
 			label.setText(`${index + 1}. ${stage.label}`);
-			const right = row.createSpan({ cls: "filen-sync-selftest-detail" });
+			const right = row.createSpan({ cls: "filen-cloud-sync-selftest-detail" });
 			if (stage.status === "ok" || stage.status === "failed") {
 				right.setText(`${stage.detail ?? stage.error ?? ""} (${stage.durationMs} ms)`.trim());
 			}
 			if (stage.error) {
-				const err = row.createDiv({ cls: "filen-sync-selftest-error filen-sync-log-error" });
+				const err = row.createDiv({ cls: "filen-cloud-sync-selftest-error filen-cloud-sync-log-error" });
 				err.setText(stage.error);
 			}
 		}
