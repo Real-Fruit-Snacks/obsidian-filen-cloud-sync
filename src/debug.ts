@@ -32,9 +32,6 @@ export function safeUrl(url: string): string {
 export function debugLog(tag: string, message: string, data?: unknown): void {
 	if (!enabled) return;
 	const stamp = new Date().toISOString();
-	if (data !== undefined) {
-		console.log(`[filen-cloud-sync] ${stamp} [${tag}] ${message}`, data);
-	} else {
-		console.log(`[filen-cloud-sync] ${stamp} [${tag}] ${message}`);
-	}
+	// Single gated console call for the whole plugin (opt-in debug log only).
+	console.log(`[filen-cloud-sync] ${stamp} [${tag}] ${message}`, ...(data !== undefined ? [data] : []));
 }

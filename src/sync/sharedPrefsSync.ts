@@ -18,7 +18,7 @@
 import type { FilenClient } from "../filen/client";
 import type { StoredCredentials } from "../filen/types";
 import type { FilenSyncSettings } from "../settings";
-import { tryDecodeUtf8, utf8ToBytes } from "../util";
+import { clearTimeoutCompat, setTimeoutCompat, tryDecodeUtf8, utf8ToBytes } from "../util";
 import type { SyncLog } from "./log";
 import { scanRemote } from "./remoteScan";
 import {
@@ -48,7 +48,7 @@ export interface SharedPrefsSyncDeps {
 
 export class SharedPrefsSync {
 	private applying = false;
-	private uploadTimer: ReturnType<typeof setTimeout> | null = null;
+	private uploadTimer: number | null = null;
 	private readonly debounceMs: number;
 
 	constructor(private readonly deps: SharedPrefsSyncDeps) {
@@ -96,7 +96,7 @@ export class SharedPrefsSync {
 	/** Toggle off: stop both directions — cancel any pending upload. */
 	disable(): void {
 		if (this.uploadTimer !== null) {
-			clearTimeout(this.uploadTimer);
+			clearTimeoutCompat(this.uploadTimer);
 			this.uploadTimer = null;
 		}
 	}
@@ -109,8 +109,8 @@ export class SharedPrefsSync {
 	onSharedKeyChanged(): void {
 		if (!this.deps.getSettings().shareSettings) return;
 		if (this.applying) return;
-		if (this.uploadTimer !== null) clearTimeout(this.uploadTimer);
-		this.uploadTimer = setTimeout(() => {
+		if (this.uploadTimer !== null) clearTimeoutCompat(this.uploadTimer);
+		this.uploadTimer = setTimeoutCompat(() => {
 			this.uploadTimer = null;
 			void this.uploadNow().catch(e => {
 				this.deps.log.warn(`shared settings upload failed: ${e instanceof Error ? e.message : String(e)}`);

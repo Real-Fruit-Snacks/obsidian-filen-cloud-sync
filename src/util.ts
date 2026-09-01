@@ -4,6 +4,9 @@
  * planner.ts (and this file) can be unit-tested in plain Node with vitest.
  */
 
+// Type-only import: erased at compile time, so the Node-purity rule holds.
+import type { ButtonComponent } from "obsidian";
+
 export const textEncoder = new TextEncoder();
 export const textDecoder = new TextDecoder();
 
@@ -438,6 +441,35 @@ export async function mapPool<T, R>(
 
 /* ---------------- time fmt ---------------- */
 
+
+const windowRef: Window | null = typeof window !== "undefined" ? window : null;
+
+/**
+ * Popout-window-compatible timers: window.setTimeout/clearTimeout on
+ * Obsidian; globalThis timers under Node (vitest). Member-call form keeps
+ * the obsidianmd prefer-window-timers rule satisfied without Node breaking.
+ */
+export function setTimeoutCompat(cb: () => void, ms: number): number {
+	const host = windowRef ?? (globalThis as typeof globalThis & Window);
+	return host.setTimeout(cb, ms);
+}
+
+export function clearTimeoutCompat(id: number | null): void {
+	if (id === null) return;
+	const host = windowRef ?? (globalThis as typeof globalThis & Window);
+	host.clearTimeout(id);
+}
+
+/**
+ * setWarning() is deprecated in favor of setDestructive() (Obsidian 1.13+).
+ * Feature-detect so the whole supported range works.
+ */
+export function setDestructiveCompat(button: ButtonComponent): ButtonComponent {
+	const modern = (button as unknown as { setDestructive?: () => ButtonComponent }).setDestructive;
+	if (typeof modern === "function") return modern.call(button);
+	return button.setWarning();
+}
+
 export function formatLogTime(millis: number): string {
 	const d = new Date(millis);
 	const pad = (n: number) => String(n).padStart(2, "0");
@@ -445,7 +477,7 @@ export function formatLogTime(millis: number): string {
 }
 
 export function sleepMillis(ms: number): Promise<void> {
-	return new Promise(resolve => setTimeout(resolve, ms));
+	return new Promise(resolve => setTimeoutCompat(resolve, ms));
 }
 
 /* ---------------- byte/quota formatting ---------------- */

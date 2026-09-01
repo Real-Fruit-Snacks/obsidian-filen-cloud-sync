@@ -11,6 +11,8 @@ on:
 
 permissions:
   contents: write
+  attestations: write
+  id-token: write
 
 jobs:
   release:
@@ -36,6 +38,14 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Attest build provenance for release assets
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            main.js
+            manifest.json
+            styles.css
 
       - name: Mobile tripwire (no Node builtins in the bundle)
         run: |

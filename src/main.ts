@@ -35,7 +35,7 @@ import { SyncProgressModal } from "./ui/progress";
 import { runSelfTest, SelfTestModal } from "./ui/selfTest";
 import { UnlockModal } from "./ui/unlock";
 import { VersionHistoryModal } from "./ui/versions";
-import { friendlyError, normalizeVaultPath, relativeTime } from "./util";
+import { friendlyError, normalizeVaultPath, relativeTime, setDestructiveCompat } from "./util";
 
 export default class FilenSyncPlugin extends Plugin {
 	settings!: FilenSyncSettings;
@@ -128,8 +128,8 @@ export default class FilenSyncPlugin extends Plugin {
 			callback: () => void this.runSync({ manual: true, dryRun: true }),
 		});
 		this.addCommand({
-			id: "unlock-filen-cloud-sync",
-			name: "Unlock Filen Cloud Sync",
+			id: "unlock-sync",
+			name: "Unlock sync",
 			callback: () => {
 				if (!this.settings.memoryOnlyCredentials) {
 					new Notice("Memory-only mode is off — connect in settings instead");
@@ -144,7 +144,7 @@ export default class FilenSyncPlugin extends Plugin {
 		});
 		this.addCommand({
 			id: "browse-version-history",
-			name: "Browse Filen version history",
+			name: "Browse version history",
 			callback: () => {
 				const file = this.app.workspace.getActiveFile();
 				if (!file) {
@@ -172,7 +172,7 @@ export default class FilenSyncPlugin extends Plugin {
 		});
 		this.addCommand({
 			id: "run-self-test",
-			name: "Run Filen Cloud Sync self-test",
+			name: "Run self-test",
 			callback: () => this.openSelfTest(),
 		});
 
@@ -496,7 +496,7 @@ export default class FilenSyncPlugin extends Plugin {
 			// Locked: one Notice per manual run, and only the first auto run —
 			// no retry spam while locked.
 			if (options.manual || !this.lockedNoticeShown) {
-				new Notice("Filen Cloud Sync is locked — run 'Unlock Filen Cloud Sync'");
+				new Notice("Filen Cloud Sync is locked — run the 'Unlock sync' command");
 				this.lockedNoticeShown = true;
 			}
 			return;
@@ -641,13 +641,14 @@ class SyncLogModal extends Modal {
 					void navigator.clipboard.writeText(this.log.render());
 					new Notice("Log copied — paste it anywhere to share");
 				}))
-			.addButton(button => button
-				.setButtonText("Clear log")
-				.setWarning()
-				.onClick(() => {
-					this.log.clear();
-					this.render();
-				}))
+			.addButton(button => {
+				setDestructiveCompat(button);
+				button.setButtonText("Clear log")
+					.onClick(() => {
+						this.log.clear();
+						this.render();
+					});
+			})
 			.addButton(button => button
 				.setButtonText("Close")
 				.onClick(() => this.close()));

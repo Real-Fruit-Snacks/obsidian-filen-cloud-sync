@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.1] — 2026-09-02
+
+### Fixed
+- Community-review feedback: use `FileManager.trashFile` (respects the user's
+  deletion preference), remove the plugin name from command names/ids,
+  popout-window-compatible timers, `setDestructive` with a `setWarning`
+  fallback for older versions, build provenance attestations on release
+  assets, and a README placeholder section removed.
+
 All notable changes to Filen Cloud Sync are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 this project uses [Semantic Versioning](https://semver.org/).

@@ -709,11 +709,9 @@ export class SyncEngine {
 		}
 		const file = this.vault.getFileByPath(op.path);
 		if (file) {
-			try {
-				await this.vault.trash(file, true);
-			} catch {
-				await this.vault.trash(file, false);
-			}
+			// FileManager.trashFile respects the user's deletion preference
+			// (system trash vs vault trash) — plain Vault.trash does not.
+			await this.app.fileManager.trashFile(file);
 		}
 		this.base.delete(op.path);
 		this.log.info(`Deleted ${op.path} on this device (moved to trash)`);
@@ -934,11 +932,7 @@ export class SyncEngine {
 		}
 		const folder = this.vault.getFolderByPath(op.path);
 		if (folder) {
-			try {
-				await this.vault.trash(folder, true);
-			} catch {
-				await this.vault.trash(folder, false);
-			}
+			await this.app.fileManager.trashFile(folder);
 		}
 		this.log.info(`Deleted folder ${op.path} on this device (moved to trash)`);
 	}

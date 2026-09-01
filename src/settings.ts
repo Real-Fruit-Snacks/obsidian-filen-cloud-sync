@@ -18,6 +18,7 @@ import {
 	isPresetEnabled,
 	mergeAllowlist,
 	normalizeVaultPath,
+	setDestructiveCompat,
 	togglePreset,
 } from "./util";
 import type FilenSyncPlugin from "./main";
@@ -116,18 +117,19 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 				.setName("Connected")
 				.setDesc(`Connected as ${credentials.email}`);
 			connected.descEl.addClass("filen-cloud-sync-connected");
-			connected.addButton(button => button
-				.setButtonText("Disconnect")
-				.setWarning()
-				.onClick(async () => {
+			connected.addButton(button => {
+				setDestructiveCompat(button);
+				button.setButtonText("Disconnect")
+					.onClick(async () => {
 					this.plugin.setMemoryCredentials(null);
 					clearCredentials(this.app);
 					clearState(this.app);
 					this.plugin.settings.email = "";
 					await this.plugin.saveSettings();
-					new Notice("Filen disconnected (credentials and local sync state cleared)");
-					this.display();
-				}));
+						new Notice("Filen disconnected (credentials and local sync state cleared)");
+						this.display();
+					});
+			});
 		} else {
 			new Setting(containerEl)
 				.setName("Email")

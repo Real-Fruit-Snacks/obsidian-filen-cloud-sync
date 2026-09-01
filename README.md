@@ -98,11 +98,6 @@ No telemetry, no third-party servers, no analytics.
 
 ## Install
 
-### Community directory (coming soon)
-
-Search "Filen Cloud Sync" in Obsidian's built-in community plugin browser once the
-plugin is accepted. Until then, use BRAT or the manual install below.
-
 ### BRAT (beta installs)
 
 1. Install the **BRAT** plugin from the community directory.
@@ -112,7 +107,7 @@ plugin is accepted. Until then, use BRAT or the manual install below.
 ### Manual
 
 1. Download `main.js`, `manifest.json` and `styles.css` from a release
-   (or unzip `filen-cloud-sync-0.6.0.zip`).
+   (or unzip `filen-cloud-sync-0.6.1.zip`).
 2. Copy them into `<your vault>/.obsidian/plugins/filen-cloud-sync/`.
 3. Enable Community plugins in Obsidian, then enable **Filen Cloud Sync**.
 
@@ -446,7 +441,7 @@ npm install
 npm run build   # tsc type-check + esbuild production bundle (main.js)
 npm run test    # vitest: crypto, planner decision table, client request shapes, utils
 npm run lint    # eslint + eslint-plugin-obsidianmd
-npm run package # build + dist/filen-cloud-sync/ + dist/filen-cloud-sync-0.6.0.zip
+npm run package # build + dist/filen-cloud-sync/ + dist/filen-cloud-sync-0.6.1.zip
 ```
 
 The Filen client is a minimal pure-TypeScript reimplementation

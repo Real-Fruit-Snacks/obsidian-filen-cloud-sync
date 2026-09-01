@@ -21,7 +21,7 @@ export class UnlockModal extends Modal {
 	}
 
 	onOpen(): void {
-		this.setTitle("Unlock Filen Cloud Sync");
+		this.setTitle("Unlock sync");
 		this.contentEl.createEl("p").setText(
 			`Memory-only mode is on — keys are never stored on disk. `
 			+ `Enter the password for ${this.email} to unlock syncing for this session.`,
