@@ -1,7 +1,7 @@
 {
 	"id": "filen-cloud-sync",
 	"name": "Filen Cloud Sync",
-	"version": "0.7.4",
+	"version": "0.7.5",
 	"minAppVersion": "1.13.0",
 	"description": "Two-way sync between your vault and Filen, a zero-knowledge end-to-end encrypted cloud storage. Works on desktop and mobile.",
 	"author": "Real-Fruit-Snacks",

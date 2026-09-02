@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.5] — 2026-09-03
+
+### Fixed
+- Dashboard one-time run dropdown was squeezed invisible by the full-width
+  button on narrow sidebars — the row now stacks (dropdown full-width on its
+  own line, button below).
+
 ## [0.7.4] — 2026-09-03
 
 ### Changed

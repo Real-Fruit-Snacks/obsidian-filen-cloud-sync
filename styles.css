@@ -389,11 +389,10 @@
 /* Dashboard one-time run row (v0.7.3) */
 .filen-cloud-sync-dashboard-runrow {
 	display: flex;
-	gap: 8px;
-	align-items: stretch;
+	flex-direction: column;
+	gap: 6px;
 }
 
 .filen-cloud-sync-dashboard-select {
-	flex: 1;
-	min-width: 0;
+	width: 100%;
 }
