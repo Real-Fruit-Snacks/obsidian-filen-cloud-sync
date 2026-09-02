@@ -27,6 +27,10 @@ is never stored. Works on **desktop and mobile**.
 - **Sync directions** — two-way by default, or one-way mirrors: push (this
   device overwrites the cloud) and pull (the cloud overwrites this device),
   with a hard guard that refuses to mirror an empty source over your data.
+  One-time "Push now" / "Pull now" buttons and commands run a single sync in
+  the other direction without touching your default.
+- **Pause syncing** — one click on the dashboard or in settings stops every
+  sync trigger (automatic and manual) until you resume.
 - **Conflict handling** — keep both copies by default, keep-newer optional,
   or a side-by-side merge view ("ask" mode) when you want to decide.
 - **Version history** — browse and restore Filen file versions from the

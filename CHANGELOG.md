@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.7.1] — 2026-09-03
+
+### Added
+- **One-time push/pull runs**: the dashboard now has **Sync now** (default
+  direction), **Push now** and **Pull now** buttons, and the command
+  palette offers "Push now (one-time)" and "Pull now (one-time)". The
+  chosen direction applies to that run only — the persisted sync-direction
+  setting is never mutated — and the empty-source hard guard applies to
+  one-time runs identically.
+- **Pause syncing**: a per-device switch (dashboard **Pause**/banner
+  **Resume** button, or the "Pause syncing" settings toggle) that blocks
+  EVERY sync trigger — auto interval, sync-on-save, startup and manual
+  runs — until resumed. Manual triggers show a notice, automatic triggers
+  skip silently, and the status bar and ribbon tooltip show the paused
+  state. Persisted across restarts; never part of shared settings.
+
+### Fixed
+- The settings tab's internal refresh path re-rendered itself recursively
+  (stack overflow when adding/removing ignored folders, disconnecting, or
+  importing a setup link); it now correctly re-renders the tab.
+
 ## [0.7.0] — 2026-09-03
 
 ### Added

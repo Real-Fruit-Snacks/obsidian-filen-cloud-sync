@@ -30,6 +30,7 @@ export interface FilenSyncSettings {
 	autoSyncOnStart: boolean;
 	syncOnSave: boolean;
 	syncDirection: SyncDirection; // v0.7.0: two-way / push / pull (per-device, never shared)
+	syncPaused: boolean; // v0.7.1: blocks every sync trigger path until resumed (never shared)
 	conflictPolicy: ConflictPolicy;
 	conflictResolution: "auto" | "ask"; // v0.4.0 E: interactive merge view for text conflicts
 	fastRemotePolling: boolean; // v0.4.0 D: events probe + cached remote tree
@@ -58,6 +59,7 @@ export function defaultSettings(vaultName: string): FilenSyncSettings {
 		autoSyncOnStart: true,
 		syncOnSave: true,
 		syncDirection: "twoWay",
+		syncPaused: false,
 		conflictPolicy: "keep_both",
 		conflictResolution: "auto",
 		fastRemotePolling: true,
@@ -112,7 +114,7 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 	 * All refreshes route through here (single display() call site).
 	 */
 	private refresh(): void {
-		this.refresh();
+		this.display();
 	}
 
 	display(): void {
@@ -230,6 +232,18 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl).setName("Sync").setHeading();
+
+		// v0.7.1 feature B: the pause switch blocks EVERY trigger path (auto
+		// interval, sync-on-save, startup, manual commands). Per-device, never
+		// a shared-settings key.
+		new Setting(containerEl)
+			.setName("Pause syncing")
+			.setDesc("Stop all syncing (automatic and manual) until resumed.")
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.syncPaused)
+				.onChange(async value => {
+					await this.plugin.setSyncPaused(value);
+				}));
 
 		const remoteFolderSetting = new Setting(containerEl)
 			.setName("Remote folder")

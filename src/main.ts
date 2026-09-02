@@ -22,9 +22,10 @@ import { FilenClient } from "./filen/client";
 import type { StoredCredentials } from "./filen/types";
 import { obsidianHttp } from "./http";
 import { defaultSettings, FilenSyncSettings, FilenSyncSettingTab, resolveRemoteFolder } from "./settings";
-import { errMsg, SyncEngine, SyncRunResult } from "./sync/engine";
+import { errMsg, SYNC_PAUSED_MESSAGE, SyncEngine, SyncRunResult } from "./sync/engine";
 import { SyncLog } from "./sync/log";
 import type { MergeDecision } from "./sync/planner";
+import type { SyncDirection } from "./sync/types";
 import { SharedPrefsSync } from "./sync/sharedPrefsSync";
 import { clearDeviceId, clearLog, clearState, loadCredentials, loadDeviceId, loadState } from "./sync/state";
 import { ConflictMergeModal } from "./ui/conflictMerge";
@@ -49,6 +50,7 @@ export default class FilenSyncPlugin extends Plugin {
 	private lastSyncResult: SyncRunResult | null = null;
 	private lastSyncFinishedAt: number | null = null;
 	private autoSyncIntervalId: number | null = null;
+	private statusBarState: "idle" | "running" | "error" = "idle";
 	/** Feature C: credentials held only in memory (never persisted). */
 	private memoryCredentials: StoredCredentials | null = null;
 	private lockedNoticeShown = false;
@@ -118,6 +120,18 @@ export default class FilenSyncPlugin extends Plugin {
 			id: "sync-now",
 			name: "Sync now",
 			callback: () => void this.runSync({ manual: true }),
+		});
+		// v0.7.1 feature A: one-time direction overrides — the persisted
+		// syncDirection setting is never mutated by these runs.
+		this.addCommand({
+			id: "push-now-one-time",
+			name: "Push now (one-time)",
+			callback: () => void this.runSync({ manual: true, direction: "push" }),
+		});
+		this.addCommand({
+			id: "pull-now-one-time",
+			name: "Pull now (one-time)",
+			callback: () => void this.runSync({ manual: true, direction: "pull" }),
 		});
 		this.addCommand({
 			id: "sync-now-ignore-guard",
@@ -210,7 +224,7 @@ export default class FilenSyncPlugin extends Plugin {
 
 		this.ribbonEl = this.addRibbonIcon(
 			this.isLocked() ? "lock" : "cloud",
-			this.isLocked() ? "Filen Cloud Sync: unlock" : "Filen Cloud Sync: dashboard",
+			this.ribbonLabel(),
 			() => {
 				// Locked keeps the unlock behavior; otherwise the ribbon toggles
 				// the dashboard leaf (v0.4.0 feature F).
@@ -285,6 +299,20 @@ export default class FilenSyncPlugin extends Plugin {
 		}
 	}
 
+	/* ---------------- pause switch (v0.7.1 feature B) ---------------- */
+
+	/**
+	 * One-click pause/resume, persisted. Called by the dashboard Pause/Resume
+	 * buttons and the settings-tab toggle. Pausing blocks every trigger path
+	 * (engine-level guard); resuming restores normal operation.
+	 */
+	async setSyncPaused(paused: boolean): Promise<void> {
+		this.settings.syncPaused = paused;
+		await this.saveSettings(); // persists + refreshes dashboards
+		this.updateStatusBar(this.statusBarState);
+		this.updateRibbon();
+	}
+
 	/* ---------------- memory-only credentials (feature C) ---------------- */
 
 	getMemoryCredentials(): StoredCredentials | null {
@@ -324,11 +352,18 @@ export default class FilenSyncPlugin extends Plugin {
 		}).open();
 	}
 
+	private ribbonLabel(): string {
+		if (this.isLocked()) return "Filen Cloud Sync: unlock";
+		// v0.7.1 feature B: the tooltip notes the paused state.
+		if (this.settings.syncPaused) return "Filen Cloud Sync: dashboard (syncing paused)";
+		return "Filen Cloud Sync: dashboard";
+	}
+
 	private updateRibbon(): void {
 		if (!this.ribbonEl) return;
 		const locked = this.isLocked();
 		setIcon(this.ribbonEl, locked ? "lock" : "cloud");
-		this.ribbonEl.setAttribute("aria-label", locked ? "Filen Cloud Sync: unlock" : "Filen Cloud Sync: dashboard");
+		this.ribbonEl.setAttribute("aria-label", this.ribbonLabel());
 	}
 
 	/* ---------------- status dashboard (v0.4.0 feature F) ---------------- */
@@ -376,7 +411,14 @@ export default class FilenSyncPlugin extends Plugin {
 				const account = await this.client.userAccount();
 				return { storage: account.storage, maxStorage: account.maxStorage };
 			},
+			getSyncPaused: () => this.settings.syncPaused,
+			getSyncDirection: () => this.settings.syncDirection,
 			onSyncNow: () => void this.runSync({ manual: true }),
+			// v0.7.1 feature A: one-time direction overrides (no setting mutation).
+			onPushNow: () => void this.runSync({ manual: true, direction: "push" }),
+			onPullNow: () => void this.runSync({ manual: true, direction: "pull" }),
+			// v0.7.1 feature B: one-click pause/resume, persisted.
+			onSetPaused: paused => void this.setSyncPaused(paused),
 			onPreviewPlan: () => void this.runSync({ manual: true, dryRun: true }),
 			onSelfTest: () => this.openSelfTest(),
 			onOpenSettings: () => {
@@ -493,7 +535,18 @@ export default class FilenSyncPlugin extends Plugin {
 		manual: boolean;
 		ignoreMassChangeGuard?: boolean;
 		dryRun?: boolean;
+		/** v0.7.1 feature A: one-time direction override (never persisted). */
+		direction?: SyncDirection;
 	}): Promise<void> {
+		// v0.7.1 feature B: paused blocks EVERY trigger path. Manual triggers
+		// get the Notice; auto triggers (interval, sync-on-save, startup) skip
+		// silently — the status bar shows the paused state. (The engine guards
+		// again itself, so even a direct engine.run() is a no-op while paused.)
+		if (this.settings.syncPaused) {
+			if (options.manual) new Notice(SYNC_PAUSED_MESSAGE);
+			this.updateStatusBar(this.statusBarState);
+			return;
+		}
 		if (this.isLocked()) {
 			// Locked: one Notice per manual run, and only the first auto run —
 			// no retry spam while locked.
@@ -595,8 +648,16 @@ export default class FilenSyncPlugin extends Plugin {
 	}
 
 	private updateStatusBar(state: "idle" | "running" | "error"): void {
+		this.statusBarState = state;
 		if (!this.statusBarItem) return;
 		this.statusBarItem.removeClass("filen-cloud-sync-error");
+		// v0.7.1 feature B: the paused state wins over idle/error (a run can't
+		// be in flight while paused — every trigger path is blocked).
+		if (this.settings.syncPaused && state !== "running") {
+			this.statusBarItem.setText("Filen: paused");
+			this.statusBarItem.setAttribute("aria-label", `Filen Cloud Sync: ${SYNC_PAUSED_MESSAGE}`);
+			return;
+		}
 		if (state === "running") {
 			this.statusBarItem.setText("Filen: syncing…");
 		} else if (state === "error") {

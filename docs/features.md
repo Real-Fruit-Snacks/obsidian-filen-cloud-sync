@@ -7,6 +7,8 @@ this document covers every option, caveat and edge case.
 
 - [Ignored folders](#ignored-folders)
 - [Sync directions](#sync-directions)
+- [One-time push/pull runs](#one-time-pushpull-runs)
+- [Pause syncing](#pause-syncing)
 - [Version history](#version-history)
 - [Memory-only credentials](#memory-only-credentials)
 - [Rename detection](#rename-detection)
@@ -77,6 +79,35 @@ When to use which: keep **two-way** for normal multi-device work; use
 verbatim to the cloud (or before handing the vault to another machine);
 use **pull** on a read-only or freshly reset device that should exactly
 reproduce the cloud without ever writing back.
+
+## One-time push/pull runs
+
+Sometimes you want a single sync in a specific direction without changing
+your default — e.g. push this vault over the cloud once, then go back to
+two-way. The dashboard has **Sync now** (uses your default direction),
+**Push now** and **Pull now** buttons, and the command palette offers
+**Push now (one-time)** and **Pull now (one-time)** alongside
+**Sync now**.
+
+A one-time run takes precedence over the configured sync direction for
+that run only — the persisted setting is never mutated, and the next
+regular run uses your default again. The empty-source hard guard applies
+to one-time runs identically: a one-time push with an empty vault and a
+non-empty cloud still aborts instead of wiping the remote.
+
+## Pause syncing
+
+**Settings → Filen Cloud Sync → Pause syncing**, or the **Pause** button
+on the dashboard, stops ALL syncing until you resume: the automatic
+interval, sync-on-save, the startup sync and every manual command/button
+are blocked. Manual triggers show a notice; automatic triggers skip
+silently. The status bar shows "Filen: paused", the ribbon tooltip notes
+the state, and the dashboard shows a "Syncing is paused" banner with a
+**Resume** button.
+
+The switch is persisted per device (it is never part of shared settings),
+so a paused device stays paused across restarts — resume from the
+dashboard or the settings toggle.
 
 ## Version history
 

@@ -35,7 +35,19 @@ import {
 	saveState,
 	STATE_SCHEMA_VERSION,
 } from "./state";
-import { BaseRecord, LocalTree, RemoteTree, RemoteTreeCache, SyncOp, SyncPlan, SyncStateFile } from "./types";
+import {
+	BaseRecord,
+	LocalTree,
+	RemoteTree,
+	RemoteTreeCache,
+	SyncDirection,
+	SyncOp,
+	SyncPlan,
+	SyncStateFile,
+} from "./types";
+
+/** v0.7.1 feature B: returned (and shown) when a run is blocked by the pause switch. */
+export const SYNC_PAUSED_MESSAGE = "Syncing is paused — resume from the dashboard or settings";
 
 export interface SyncProgress {
 	phase: string;
@@ -63,10 +75,17 @@ export interface SyncRunOptions {
 	onProgress?: (progress: SyncProgress) => void;
 	/** Checked before every op — returning true cancels the run cleanly. */
 	isCancelled?: () => boolean;
+	/**
+	 * v0.7.1 feature A: one-time direction override ("Push now" / "Pull now").
+	 * Takes precedence over `settings.syncDirection` FOR THIS RUN ONLY — the
+	 * persisted setting is never mutated. The empty-source hard guard applies
+	 * to the overridden direction identically.
+	 */
+	direction?: SyncDirection;
 }
 
 export interface SyncRunResult {
-	status: "ok" | "aborted" | "error" | "skipped" | "empty" | "dry-run";
+	status: "ok" | "aborted" | "error" | "skipped" | "empty" | "dry-run" | "paused";
 	message: string;
 	plan?: SyncPlan;
 	/**
@@ -192,6 +211,12 @@ export class SyncEngine {
 	/* ---------------- main entry ---------------- */
 
 	async run(options: SyncRunOptions = {}): Promise<SyncRunResult> {
+		// v0.7.1 feature B: the pause switch blocks EVERY trigger path (auto
+		// interval, sync-on-save, startup, manual commands) right here — zero
+		// planner/client activity, not even the single-flight lock.
+		if (this.getSettings().syncPaused) {
+			return { status: "paused", message: SYNC_PAUSED_MESSAGE };
+		}
 		if (this.syncRunning) {
 			this.syncPending = true;
 			return { status: "skipped", message: "sync already running — queued" };
@@ -411,7 +436,9 @@ export class SyncEngine {
 			configDir: this.vault.configDir,
 			protectPath: (path: string) => this.protectConfigPath(path),
 			skipRemoteFolderPrune: remoteFromCache,
-			syncDirection: settings.syncDirection,
+			// v0.7.1 feature A: a one-time override wins for THIS run only —
+			// `settings` is never written back.
+			syncDirection: options.direction ?? settings.syncDirection,
 		};
 		let plan = planSync(local, remote, this.base, plannerOptions);
 		let guardWouldAbort = false;

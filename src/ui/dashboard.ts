@@ -8,6 +8,7 @@
  */
 
 import { ItemView, WorkspaceLeaf } from "obsidian";
+import type { SyncDirection } from "../sync/types";
 import { formatQuota, relativeTime } from "../util";
 
 export const VIEW_TYPE_FILEN_DASHBOARD = "filen-cloud-sync-dashboard";
@@ -32,7 +33,16 @@ export interface DashboardDeps {
 	getLastRun: () => DashboardLastRun | null;
 	/** Account quota; null → "quota unavailable" (failure or not connected). */
 	getQuota: () => Promise<{ storage: number; maxStorage: number } | null>;
+	/** v0.7.1 feature B: pause state for the banner + Pause/Resume button. */
+	getSyncPaused: () => boolean;
+	/** v0.7.1 feature A: the persisted default direction (for the note). */
+	getSyncDirection: () => SyncDirection;
 	onSyncNow: () => void;
+	/** v0.7.1 feature A: one-time direction overrides (never persisted). */
+	onPushNow: () => void;
+	onPullNow: () => void;
+	/** v0.7.1 feature B: one-click pause/resume, persisted. */
+	onSetPaused: (paused: boolean) => void;
 	/** v0.6.0 feature A: dry-run plan preview. */
 	onPreviewPlan: () => void;
 	onSelfTest: () => void;
@@ -96,6 +106,15 @@ export class FilenSyncDashboardView extends ItemView {
 		root.empty();
 		root.addClass("filen-cloud-sync-dashboard");
 
+		/* ---- Pause state (v0.7.1 feature B) ---- */
+		const paused = this.deps.getSyncPaused();
+		if (paused) {
+			const banner = root.createDiv({ cls: "filen-cloud-sync-paused-banner" });
+			banner.createDiv({ cls: "filen-cloud-sync-paused-banner-text" })
+				.setText("Syncing is paused");
+			this.addButton(banner, "Resume", () => this.deps.onSetPaused(false), true);
+		}
+
 		/* ---- Connection ---- */
 		const connection = this.deps.getConnection();
 		const connectionEl = this.section(root, "Connection");
@@ -158,6 +177,19 @@ export class FilenSyncDashboardView extends ItemView {
 		/* ---- Actions ---- */
 		const buttons = root.createDiv({ cls: "filen-cloud-sync-dashboard-buttons" });
 		this.addButton(buttons, "Sync now", () => this.deps.onSyncNow(), true);
+		// v0.7.1 feature A: one-time direction overrides — the persisted
+		// default direction is never mutated by these runs.
+		this.addButton(buttons, "Push now", () => this.deps.onPushNow());
+		this.addButton(buttons, "Pull now", () => this.deps.onPullNow());
+		buttons.createDiv({ cls: "filen-cloud-sync-dashboard-muted" })
+			.setText(
+				"Push/Pull run once with that direction — your default "
+				+ `(${directionLabel(this.deps.getSyncDirection())}) is unchanged.`,
+			);
+		// v0.7.1 feature B: Pause while running, Resume in the banner above.
+		if (!paused) {
+			this.addButton(buttons, "Pause", () => this.deps.onSetPaused(true));
+		}
 		this.addButton(buttons, "Preview sync plan", () => this.deps.onPreviewPlan());
 		this.addButton(buttons, "Run self-test", () => this.deps.onSelfTest());
 		this.addButton(buttons, "Open settings", () => this.deps.onOpenSettings());
@@ -169,5 +201,14 @@ export class FilenSyncDashboardView extends ItemView {
 		if (cta) button.addClass("mod-cta");
 		button.setText(label);
 		button.addEventListener("click", onClick);
+	}
+}
+
+/** Display label for the persisted default direction (the one-time note). */
+function directionLabel(direction: SyncDirection): string {
+	switch (direction) {
+		case "push": return "push";
+		case "pull": return "pull";
+		default: return "two-way";
 	}
 }

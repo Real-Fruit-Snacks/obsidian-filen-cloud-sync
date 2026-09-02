@@ -297,6 +297,23 @@
 .filen-cloud-sync-dashboard-button {
 	width: 100%;
 }
+
+/* Paused banner (v0.7.1 feature B) */
+.filen-cloud-sync-paused-banner {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 8px;
+	padding: 10px 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	background: var(--background-secondary);
+}
+
+.filen-cloud-sync-paused-banner-text {
+	font-weight: 600;
+	color: var(--text-warning);
+}
 .filen-cloud-sync-disabled {
     opacity: 0.55;
 }
