@@ -7,7 +7,6 @@
 
 import type { FileMetadata } from "../filen/types";
 import { baseNameOf, conflictPathFor, isConfigPath, normalizeVaultPath, parentChains, wholeSeconds } from "../util";
-import { PREFS_FILE_NAME } from "./sharedPrefs";
 import {
 	BaseRecord,
 	ConflictPolicy,
@@ -407,10 +406,11 @@ export function planSync(
 	let deletes = 0;
 	let modifies = 0;
 	for (const path of allPaths) {
-		// v0.5.0: the shared-preferences file is managed ONLY via explicit
-		// client calls — never planned (no download/upload/trash), whatever
-		// the scan data says.
-		if (path === PREFS_FILE_NAME) continue;
+		// v0.5.0+: internal sync files at the vault root (shared preferences,
+		// current and legacy names, stray tmp files) are managed ONLY via
+		// explicit client calls — never planned (no download/upload/trash),
+		// whatever the scan data says.
+		if (!path.includes("/") && path.startsWith(".filen-")) continue;
 		// Excluded-but-present locally (ignore pattern, dotfile toggle, size
 		// limit, …): "ignored" must never be read as "deleted" — suppress ALL
 		// ops and leave the base record untouched.

@@ -200,7 +200,7 @@ describe("localScan shared-preferences exclusion (v0.5.0)", () => {
 		expect(tree.files.has(".filen-cloud-sync-preferences.json")).toBe(false);
 		expect(tree.excluded.has(".filen-cloud-sync-preferences.json")).toBe(true);
 		expect(tree.skipped.some(s => s.path === ".filen-cloud-sync-preferences.json"
-			&& s.reason === "sync preferences file")).toBe(true);
+			&& s.reason === "internal sync file")).toBe(true);
 		// Regular dotfiles still follow the toggle.
 		expect(tree.files.has(".other-dotfile")).toBe(true);
 		expect(tree.files.has("note.md")).toBe(true);

@@ -72,11 +72,20 @@ class FakeVault {
 		},
 		list: async (folder: string) => {
 			// NON-recursive like the real DataAdapter.list — direct children only.
+			// Folders are explicit (mkdir) OR implied by files beneath them,
+			// matching a real filesystem.
 			const prefix = folder + "/";
 			const direct = (p: string) => p.startsWith(prefix) && !p.slice(prefix.length).includes("/");
+			const impliedFolders = new Set<string>(this.folderSet);
+			for (const p of this.contents.keys()) {
+				if (!p.startsWith(prefix)) continue;
+				const rest = p.slice(prefix.length);
+				const slash = rest.indexOf("/");
+				if (slash > 0) impliedFolders.add(prefix + rest.slice(0, slash));
+			}
 			return {
 				files: [...this.contents.keys()].filter(direct),
-				folders: [...this.folderSet].filter(direct),
+				folders: [...impliedFolders].filter(direct),
 			};
 		},
 		mkdir: async (path: string) => {
@@ -1105,5 +1114,69 @@ describe("shared-preferences file exclusion — engine (v0.5.0)", () => {
 		expect(ops.some(op => op.path === ".filen-cloud-sync-preferences.json")).toBe(false);
 		expect(remoteFiles.has(".filen-cloud-sync-preferences.json")).toBe(false);
 		expect(remoteFiles.has("note.md")).toBe(true);
+	});
+});
+
+/* ---------------- v0.6.8 live-bug fixes ---------------- */
+
+describe("v0.6.8 — internal .filen-* files never sync (live wedge bug)", () => {
+	// The exact production failure: a legacy `.filen-sync-preferences.json`
+	// (pre-rename shared-prefs file) sat on the remote drive AND on local disk.
+	// The vault index can't see dotfiles → atomicWrite took the new-file path →
+	// rename onto an existing file failed → "Destination file already exists"
+	// every run, forever. Now: no ops are planned for root .filen-* at all.
+	it("legacy prefs file on both sides → zero ops, no errors (dotfiles on)", async () => {
+		const { engine, vault, app, seedRemote } = makeEngine();
+		seedRemote(".filen-sync-preferences.json", "{\"legacy\":true}", T0 + 5000);
+		vault.addFile(".filen-sync-preferences.json", "{\"legacy\":true}", T0);
+		const state = emptyState();
+		state.remoteRootUuid = ROOT;
+		saveState(app, state);
+		const run = await engine.run({ manual: true });
+		expect(run.status).toBe("empty");
+		expect(run.plan?.ops ?? []).toHaveLength(0);
+		expect((run.plan?.ops ?? []).some(op => op.path.includes(".filen-"))).toBe(false);
+	});
+
+	it("same wedge scenario with excludeDotFiles OFF → still zero ops", async () => {
+		const { engine, vault, app, seedRemote, settings } = makeEngine();
+		settings.excludeDotFiles = false;
+		seedRemote(".filen-sync-preferences.json", "{\"legacy\":true}", T0 + 5000);
+		vault.addFile(".filen-sync-preferences.json", "{\"legacy\":true}", T0);
+		const state = emptyState();
+		state.remoteRootUuid = ROOT;
+		saveState(app, state);
+		const run = await engine.run({ manual: true });
+		expect((run.plan?.ops ?? []).some(op => op.path.includes(".filen-"))).toBe(false);
+		expect(run.status === "empty" || run.status === "ok").toBe(true);
+	});
+
+	it("the CURRENT prefs file is likewise never planned", async () => {
+		const { engine, vault, app, seedRemote } = makeEngine();
+		seedRemote(".filen-cloud-sync-preferences.json", "{\"v\":1}", T0);
+		vault.addFile("note.md", "hello", T0);
+		const state = emptyState();
+		state.remoteRootUuid = ROOT;
+		saveState(app, state);
+		const run = await engine.run({ manual: true });
+		expect(run.plan?.ops.some(op => op.path === ".filen-cloud-sync-preferences.json")).toBe(false);
+		expect(run.plan?.ops.some(op => op.kind === "upload" && op.path === "note.md")).toBe(true);
+	});
+
+	it("our own plugin folder never syncs via the plugins preset", async () => {
+		const { engine, vault, app, settings } = makeEngine();
+		settings.syncConfigDir = true;
+		settings.configSyncAllowlist = ["plugins"];
+		vault.addFile(".obsidian/plugins/filen-cloud-sync/data.json", "{}", T0);
+		vault.addFile(".obsidian/plugins/other-plugin/data.json", "{}", T0);
+		vault.addFile(".obsidian/plugins/filen-sync/data.json", "{}", T0); // legacy id
+		const state = emptyState();
+		state.remoteRootUuid = ROOT;
+		saveState(app, state);
+		const run = await engine.run({ manual: true });
+		const paths = (run.plan?.ops ?? []).map(op => op.path);
+		expect(paths.some(p => p.includes("plugins/filen-cloud-sync"))).toBe(false);
+		expect(paths.some(p => p.includes("plugins/filen-sync/"))).toBe(false);
+		expect(paths.some(p => p.includes("plugins/other-plugin"))).toBe(true);
 	});
 });

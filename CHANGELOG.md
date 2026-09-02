@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.8] — 2026-09-02
+
+### Fixed
+- **Live wedge: legacy ".filen-sync-preferences.json"** (from the pre-rename
+  name) was not covered by the internal-file guard; combined with the vault
+  index being unable to see dotfiles, downloads of it failed on every run
+  ("Destination file already exists"). All root-level ".filen-*" internals
+  are now excluded from sync in both directions, and downloads check the
+  DISK (not the vault index) before the atomic write, so an untracked
+  on-disk destination is overwritten instead of wedging.
+- Our own plugin folder (current and legacy id) no longer syncs via the
+  "plugins" config preset — its per-device state caused recurring conflicts.
+
 ## [0.6.7] — 2026-09-02
 
 ### Fixed

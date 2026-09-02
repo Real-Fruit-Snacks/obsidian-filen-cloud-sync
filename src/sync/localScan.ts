@@ -20,7 +20,6 @@ import {
 	normalizeVaultPath,
 	parseIgnorePatterns,
 } from "../util";
-import { PREFS_FILE_NAME } from "./sharedPrefs";
 import type { LocalFile, LocalTree } from "./types";
 
 export interface LocalScanOptions {
@@ -57,15 +56,26 @@ export function shouldExcludePath(
 	ignoreRulesText: string,
 ): string | null {
 	const normalized = normalizeVaultPath(path);
-	// v0.5.0: the shared-preferences file lives in the sync root and is managed
-	// ONLY via explicit client calls — never synced as vault content, even when
-	// excludeDotFiles is off (hard reserved exclusion, like *.filen-tmp).
-	if (normalized === PREFS_FILE_NAME) return "sync preferences file";
+	// v0.5.0+: internal sync files at the vault root (the shared-preferences
+	// file current AND legacy names, *.filen-tmp strays) are managed ONLY via
+	// explicit client calls — never synced as vault content, even when
+	// excludeDotFiles is off (hard reserved exclusion).
+	if (!normalized.includes("/") && normalized.startsWith(".filen-")) {
+		return "internal sync file";
+	}
 	const cfg = normalizeVaultPath(configDir);
 	const underConfig = normalized === cfg || normalized.startsWith(cfg + "/");
 	if (underConfig) {
 		// HARD guard: workspace.json/workspace* never sync, allowlist or not.
 		if (isWorkspaceFileName(baseNameOf(normalized))) return "workspace files never sync";
+		// HARD guard: our own plugin state (data.json holds per-device
+		// bookkeeping) never syncs, even under the "plugins" preset — the
+		// shared-settings feature is the channel for preferences. Covers the
+		// legacy plugin id too.
+		if (normalized.startsWith(`${cfg}/plugins/filen-cloud-sync`)
+			|| normalized.startsWith(`${cfg}/plugins/filen-sync`)) {
+			return "own plugin state never syncs";
+		}
 		if (!opts.syncConfigDir || !allowlistAllows(normalized, cfg, opts.configSyncAllowlist)) {
 			return "config dir";
 		}

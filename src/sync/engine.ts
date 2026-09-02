@@ -886,12 +886,21 @@ export class SyncEngine {
 			await this.vault.adapter.writeBinary(path, data, { mtime, ctime: mtime });
 			return;
 		}
+		const adapter = this.vault.adapter;
 		const existing = this.vault.getFileByPath(path);
 		if (existing) {
 			await this.vault.modifyBinary(existing, data, { mtime });
 			return;
 		}
-		const adapter = this.vault.adapter;
+		// The vault index misses dotfiles and other hidden files — a file can
+		// exist on disk while getFileByPath returns null. Check the DISK,
+		// otherwise the tmp+rename below fails forever ("destination exists").
+		if (await adapter.exists(path)) {
+			this.log.warn(`overwrote existing untracked file ${path}`);
+			await this.ensureLocalFolder(parentDir(path));
+			await adapter.writeBinary(path, data, { mtime, ctime: mtime });
+			return;
+		}
 		const tmpPath = path + TMP_SUFFIX;
 		await this.ensureLocalFolder(parentDir(path));
 		await adapter.writeBinary(tmpPath, data);
