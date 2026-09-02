@@ -10,6 +10,7 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import type { SyncDirection } from "../sync/types";
 import { formatQuota, relativeTime } from "../util";
+import { ConfirmModal } from "./confirm";
 
 export const VIEW_TYPE_FILEN_DASHBOARD = "filen-cloud-sync-dashboard";
 
@@ -176,11 +177,29 @@ export class FilenSyncDashboardView extends ItemView {
 
 		/* ---- Actions ---- */
 		const buttons = root.createDiv({ cls: "filen-cloud-sync-dashboard-buttons" });
-		this.addButton(buttons, "Sync now", () => this.deps.onSyncNow(), true);
-		// v0.7.1 feature A: one-time direction overrides — the persisted
-		// default direction is never mutated by these runs.
-		this.addButton(buttons, "Push now", () => this.deps.onPushNow());
-		this.addButton(buttons, "Pull now", () => this.deps.onPullNow());
+		// One-time directional runs (v0.7.3): dropdown + single action button
+		// instead of three easy-to-misclick buttons. Destructive directions
+		// confirm before running. The persisted default direction is never
+		// mutated by these runs.
+		const runRow = buttons.createDiv({ cls: "filen-cloud-sync-dashboard-runrow" });
+		const select = runRow.createEl("select", { cls: "dropdown filen-cloud-sync-dashboard-select" });
+		for (const [value, label] of [
+			["twoWay", "Two-way sync"],
+			["push", "Push — overwrite cloud"],
+			["pull", "Pull — overwrite this device"],
+		] as Array<[SyncDirection, string]>) {
+			const opt = select.createEl("option");
+			opt.value = value;
+			opt.textContent = label;
+		}
+		select.value = this.deps.getSyncDirection();
+		const runBtn = runRow.createEl("button", { cls: "filen-cloud-sync-dashboard-button filen-cloud-sync-cta" });
+		runBtn.setText("Sync now");
+		runBtn.addEventListener("click", () => {
+			const choice = select.value as SyncDirection;
+			if (choice === "twoWay") this.deps.onSyncNow();
+			else this.confirmOneTimeRun(choice);
+		});
 		buttons.createDiv({ cls: "filen-cloud-sync-dashboard-muted" })
 			.setText(
 				"Push/Pull run once with that direction — your default "
@@ -194,6 +213,23 @@ export class FilenSyncDashboardView extends ItemView {
 		this.addButton(buttons, "Run self-test", () => this.deps.onSelfTest());
 		this.addButton(buttons, "Open settings", () => this.deps.onOpenSettings());
 		this.addButton(buttons, "Show sync log", () => this.deps.onShowLog());
+	}
+
+	/** Push/pull one-time runs are destructive mirrors — confirm first (v0.7.3). */
+	private confirmOneTimeRun(direction: "push" | "pull"): void {
+		const isPush = direction === "push";
+		new ConfirmModal(
+			this.app,
+			isPush ? "One-time push — overwrite the cloud?" : "One-time pull — overwrite this device?",
+			isPush
+				? "This run MIRRORS the vault to Filen: files changed on Filen are overwritten by your local copies, and files missing locally are trashed on Filen. Your default sync direction is unchanged."
+				: "This run MIRRORS Filen to this vault: local changes are overwritten by the cloud versions, and files missing on Filen are trashed locally. Your default sync direction is unchanged.",
+			isPush ? "Run push" : "Run pull",
+			() => {
+				if (isPush) this.deps.onPushNow();
+				else this.deps.onPullNow();
+			},
+		).open();
 	}
 
 	private addButton(container: HTMLElement, label: string, onClick: () => void, cta = false): void {

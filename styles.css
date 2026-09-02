@@ -385,3 +385,15 @@
 	background-color: var(--text-accent);
 	vertical-align: middle;
 }
+
+/* Dashboard one-time run row (v0.7.3) */
+.filen-cloud-sync-dashboard-runrow {
+	display: flex;
+	gap: 8px;
+	align-items: stretch;
+}
+
+.filen-cloud-sync-dashboard-select {
+	flex: 1;
+	min-width: 0;
+}

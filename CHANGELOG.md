@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.3] — 2026-09-03
+
+### Changed
+- **Dashboard one-time runs are now a dropdown + single "Sync now" button**
+  (defaulting to your saved direction) instead of three easy-to-misclick
+  buttons. Choosing Push or Pull first asks for confirmation — one-time
+  mirror runs can no longer fire by accident.
+
 ## [0.7.2] — 2026-09-03
 
 ### Added
