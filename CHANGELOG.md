@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.9] — 2026-09-02
+
+### Changed
+- Deterministic keep-newer conflict resolutions (e.g. config files like
+  community-plugins.json rewritten independently on each device) now log as
+  info instead of conflict level — conflict-level is reserved for keep-both
+  copies that need your attention. The plugins-list preset description now
+  explains the shared-list semantics.
+
 ## [0.6.8] — 2026-09-02
 
 ### Fixed

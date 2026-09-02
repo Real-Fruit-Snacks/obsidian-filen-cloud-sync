@@ -647,7 +647,8 @@ export const CONFIG_PRESETS: ConfigPreset[] = [
 	{
 		path: "community-plugins.json",
 		label: "Community plugins list",
-		desc: "Which community plugins are enabled.",
+		desc: "Which community plugins are enabled. All synced devices share one list "
+			+ "(newest wins) — turn this off if your devices run different plugin sets.",
 	},
 	{
 		path: "core-plugins.json",

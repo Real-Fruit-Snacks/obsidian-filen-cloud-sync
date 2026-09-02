@@ -460,6 +460,15 @@ export class SyncEngine {
 			this.log.info(`seed mode: ${plan.seedMode}`);
 		}
 		for (const conflict of plan.conflicts) {
+			// Forced keep-newer (config paths) is deterministic housekeeping —
+			// the newest copy simply wins. Log it as info, not conflict-level:
+			// only keep_both (a copy was created) deserves the user's attention.
+			if (conflict.policy === "keep_newer") {
+				this.log.info(
+					`updated from the newer copy: ${conflict.path} (winner: ${conflict.winner})`,
+				);
+				continue;
+			}
 			const message = `conflict: ${conflict.path} (${conflict.policy}, winner: ${conflict.winner})`;
 			this.log.conflict(message);
 			this.notify(message);
