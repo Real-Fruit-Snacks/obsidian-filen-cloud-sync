@@ -214,6 +214,66 @@ export function planFile(
 			: none;
 	}
 
+	/* ---- v0.7.0 mirror modes (push / pull) ---- */
+	// The source side wins EVERYWHERE: foreign edits on the other side are
+	// reverted (re-upload / re-download), deletions propagate from the
+	// source, and no conflict records are ever produced (the winner is
+	// deterministic). The equality short-circuit (stat-equal or SHA-512
+	// hash match) applies BEFORE the mode tables, exactly as in two-way.
+	const direction = opts.syncDirection ?? "twoWay";
+
+	if (direction === "push") {
+		if (local && remote) {
+			if (base && !localChanged(local, base) && !remoteChanged(remote, base)) {
+				return none; // both sides match the base record
+			}
+			if (equalByStat(local, remote) || equalByHash(local, remote, opts)) {
+				return { ops: [{ kind: "refreshBase", path, remote }], deletes: 0, modifies: 0 };
+			}
+			// Local wins: localChanged, remoteChanged (revert of a foreign
+			// cloud edit) and both-changed all resolve as a plain upload.
+			return { ops: [{ kind: "upload", path }], deletes: 0, modifies: base ? 1 : 0 };
+		}
+		if (local && !remote) {
+			// New local file, or the remote copy was deleted — the mirror
+			// re-uploads either way.
+			return { ops: [{ kind: "upload", path }], deletes: 0, modifies: 0 };
+		}
+		if (!local && remote) {
+			// Deleted locally (or never local) → the deletion propagates.
+			return { ops: [{ kind: "trashRemote", path, remote }], deletes: 1, modifies: 0 };
+		}
+		// history-only record
+		if (base) return { ops: [{ kind: "dropBase", path }], deletes: 0, modifies: 0 };
+		return none;
+	}
+
+	if (direction === "pull") {
+		if (local && remote) {
+			if (base && !localChanged(local, base) && !remoteChanged(remote, base)) {
+				return none; // both sides match the base record
+			}
+			if (equalByStat(local, remote) || equalByHash(local, remote, opts)) {
+				return { ops: [{ kind: "refreshBase", path, remote }], deletes: 0, modifies: 0 };
+			}
+			// Remote wins: remoteChanged, localChanged (revert of a foreign
+			// local edit) and both-changed all resolve as a plain download.
+			return { ops: [{ kind: "download", path, remote }], deletes: 0, modifies: base ? 1 : 0 };
+		}
+		if (!local && remote) {
+			// New remote file, or the local copy was deleted — the mirror
+			// re-downloads either way.
+			return { ops: [{ kind: "download", path, remote }], deletes: 0, modifies: 0 };
+		}
+		if (local && !remote) {
+			// Deleted remotely (or never remote) → the deletion propagates.
+			return { ops: [{ kind: "trashLocal", path }], deletes: 1, modifies: 0 };
+		}
+		// history-only record
+		if (base) return { ops: [{ kind: "dropBase", path }], deletes: 0, modifies: 0 };
+		return none;
+	}
+
 	if (local && remote) {
 		if (base && !localChanged(local, base) && !remoteChanged(remote, base)) {
 			return none; // both sides match the base record
@@ -368,11 +428,33 @@ export function planSync(
 	opts: PlannerOptions,
 ): SyncPlan {
 	const plan = emptyPlan();
+	const direction = opts.syncDirection ?? "twoWay";
 
-	/* ---- seed mode (guard 1) ---- */
 	const baseEmpty = base.size === 0;
 	const localEmpty = local.files.size === 0;
 	const remoteEmpty = remote.files.size === 0;
+
+	/* ---- empty-source hard guard (v0.7.0, data-loss prevention) ---- */
+	// A mirror run whose SOURCE side is empty would wipe the non-empty
+	// target. This aborts regardless of base state, and the manual
+	// "Sync now (ignore mass-change guard)" command does NOT bypass it
+	// (that flag only affects the mass-change guard below).
+	if (direction === "push" && localEmpty && !remoteEmpty) {
+		plan.aborted = true;
+		plan.abortReason =
+			"push source is empty — mirroring would wipe the remote; this is almost "
+			+ "certainly wrong (seed the vault or switch to two-way/pull)";
+		return plan;
+	}
+	if (direction === "pull" && remoteEmpty && !localEmpty) {
+		plan.aborted = true;
+		plan.abortReason =
+			"pull source is empty — mirroring would wipe the local vault; this is almost "
+			+ "certainly wrong (seed the remote or switch to two-way/push)";
+		return plan;
+	}
+
+	/* ---- seed mode (guard 1) ---- */
 	if (baseEmpty && localEmpty && !remoteEmpty) plan.seedMode = "download-all";
 	else if (baseEmpty && !localEmpty && remoteEmpty) plan.seedMode = "upload-all";
 	else if (baseEmpty && !localEmpty && !remoteEmpty) plan.seedMode = "both-nonempty";
@@ -383,7 +465,11 @@ export function planSync(
 	const ignored = ignoredPrefixes(opts);
 
 	/* ---- rename detection (feature D, conservative hash-matched) ---- */
-	const renames = plan.seedMode ? [] : detectRenames(local, remote, base, opts, ignored);
+	// v0.7.0: pull suppresses renameRemote entirely — a mirror cloud → local
+	// never writes remote (a local rename resolves as trashLocal + download).
+	const renames = plan.seedMode || direction === "pull"
+		? []
+		: detectRenames(local, remote, base, opts, ignored);
 	const renamedPaths = new Set<string>();
 	for (const rename of renames) {
 		renamedPaths.add(rename.fromPath);
@@ -479,7 +565,8 @@ export function planSync(
 	// v0.4.0 feature D: a cached remote tree (events fast-poll) is not
 	// tree-fresh → skip remote-folder pruning entirely; file-level logic is
 	// unaffected. A full dir/tree re-enables pruning.
-	if (!opts.skipRemoteFolderPrune) {
+	// v0.7.0: pull never prunes remote folders (the cloud is the source).
+	if (!opts.skipRemoteFolderPrune && direction !== "pull") {
 		const remoteDirsDeepestFirst = [...remoteActual].sort((a, b) => b.length - a.length);
 		for (const d of remoteDirsDeepestFirst) {
 			if ((isIgnored(d, ignored) || opts.protectPath?.(d))) continue; // ignored prefix: leave remote dirs alone
@@ -491,23 +578,30 @@ export function planSync(
 		}
 	}
 	const prunedLocal = new Set<string>();
-	const localDirsDeepestFirst = [...localActual].sort((a, b) => b.length - a.length);
-	for (const d of localDirsDeepestFirst) {
-		if ((isIgnored(d, ignored) || opts.protectPath?.(d))) continue; // ignored prefix: leave local dirs alone
-		if (!baseDirs.has(d)) continue;
-		if (plannedRemoteArr.some(p => pathAtOrUnder(d, p))) continue;
-		// every local file under d must be getting trashed for this to be safe
-		if ([...local.files.keys()].some(f => pathAtOrUnder(d, f)
-			&& !plan.ops.some(op => op.kind === "trashLocal" && op.path === f))) continue;
-		prunedLocal.add(d);
-		plan.ops.push({ kind: "trashLocalDir", path: d });
+	// v0.7.0: push never prunes local folders (the vault is the source).
+	if (direction !== "push") {
+		const localDirsDeepestFirst = [...localActual].sort((a, b) => b.length - a.length);
+		for (const d of localDirsDeepestFirst) {
+			if ((isIgnored(d, ignored) || opts.protectPath?.(d))) continue; // ignored prefix: leave local dirs alone
+			if (!baseDirs.has(d)) continue;
+			if (plannedRemoteArr.some(p => pathAtOrUnder(d, p))) continue;
+			// every local file under d must be getting trashed for this to be safe
+			if ([...local.files.keys()].some(f => pathAtOrUnder(d, f)
+				&& !plan.ops.some(op => op.kind === "trashLocal" && op.path === f))) continue;
+			prunedLocal.add(d);
+			plan.ops.push({ kind: "trashLocalDir", path: d });
+		}
 	}
 
 	// mkdir ops (safe, ensure-exists both sides) — skip pruned dirs.
-	for (const d of localActual) {
-		if ((isIgnored(d, ignored) || opts.protectPath?.(d))) continue;
-		if (!remoteActual.has(d) && !prunedLocal.has(d)) {
-			plan.ops.push({ kind: "mkdirRemote", path: d });
+	// v0.7.0: mkdir only towards the mirror target (push → remote,
+	// pull → local); a mirror never creates folders on its source side.
+	if (direction !== "pull") {
+		for (const d of localActual) {
+			if ((isIgnored(d, ignored) || opts.protectPath?.(d))) continue;
+			if (!remoteActual.has(d) && !prunedLocal.has(d)) {
+				plan.ops.push({ kind: "mkdirRemote", path: d });
+			}
 		}
 	}
 	// Folders that exist locally because they hold excluded files — no
@@ -516,10 +610,12 @@ export function planSync(
 	for (const p of local.excluded) {
 		for (const parent of parentChains(p)) excludedLocalDirs.add(parent);
 	}
-	for (const d of remoteActual) {
-		if ((isIgnored(d, ignored) || opts.protectPath?.(d))) continue;
-		if (!localActual.has(d) && !prunedRemote.has(d) && !excludedLocalDirs.has(d)) {
-			plan.ops.push({ kind: "mkdirLocal", path: d });
+	if (direction !== "push") {
+		for (const d of remoteActual) {
+			if ((isIgnored(d, ignored) || opts.protectPath?.(d))) continue;
+			if (!localActual.has(d) && !prunedRemote.has(d) && !excludedLocalDirs.has(d)) {
+				plan.ops.push({ kind: "mkdirLocal", path: d });
+			}
 		}
 	}
 

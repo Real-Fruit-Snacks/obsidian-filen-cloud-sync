@@ -89,6 +89,15 @@ export interface RemoteTreeCache {
 
 export type ConflictPolicy = "keep_both" | "keep_newer";
 
+/**
+ * v0.7.0: sync direction. twoWay = the current three-way reconciliation.
+ * push = mirror local → cloud (the vault wins everywhere; foreign cloud
+ * edits are reverted by re-upload, remote files deleted locally are
+ * trashed remotely; never downloads). pull = mirror cloud → local
+ * (symmetric). Mirror modes never produce conflict records.
+ */
+export type SyncDirection = "twoWay" | "push" | "pull";
+
 export type SyncOpKind =
 	| "upload"          // local → remote (create or overwrite w/ new uuid)
 	| "download"        // remote → local
@@ -185,6 +194,13 @@ export interface PlannerOptions {
 	 * File-level logic is unchanged (3-way base + trash-only bound the risk).
 	 */
 	skipRemoteFolderPrune?: boolean;
+	/**
+	 * v0.7.0: sync direction. Undefined = "twoWay" (the legacy behavior,
+	 * byte-identical). "push"/"pull" switch the planner to the mirror
+	 * decision tables (no conflict records, one-sided prune/mkdir, pull
+	 * suppresses renameRemote entirely).
+	 */
+	syncDirection?: SyncDirection;
 }
 
 export function emptyPlan(): SyncPlan {

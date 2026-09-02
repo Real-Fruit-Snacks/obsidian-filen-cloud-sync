@@ -6,6 +6,7 @@ this document covers every option, caveat and edge case.
 ## Table of contents
 
 - [Ignored folders](#ignored-folders)
+- [Sync directions](#sync-directions)
 - [Version history](#version-history)
 - [Memory-only credentials](#memory-only-credentials)
 - [Rename detection](#rename-detection)
@@ -33,6 +34,49 @@ from syncing in **both** directions: local changes inside them are not
 uploaded, remote changes are not downloaded, and deletions never propagate
 in or out. Their sync base records are preserved, so removing a folder from
 the ignore list later resumes syncing it cleanly (no conflict duplicates).
+
+## Sync directions
+
+**Settings → Filen Cloud Sync → Sync direction** picks how the vault and
+the cloud reconcile (per device — it is never part of shared settings):
+
+- **Two-way (sync both ways)** — the default. Changes reconcile in both
+  directions and simultaneous edits on both sides produce conflict copies
+  (or keep-newer, per your conflict policy).
+- **Push (this device overwrites the cloud)** — a MIRROR of the vault onto
+  Filen. The vault is the source of truth: local edits upload, files you
+  deleted locally are trashed remotely, and edits made anywhere else in
+  the cloud are **reverted** (the local copy is re-uploaded over them).
+  Nothing is ever downloaded. Simultaneous edits never produce conflict
+  records — the vault always wins. A local rename still becomes a cheap
+  server-side rename.
+- **Pull (the cloud overwrites this device)** — the symmetric mirror: the
+  cloud is the source of truth. Remote edits download, files deleted in
+  the cloud are trashed locally, and local edits are **reverted** by
+  re-downloading the cloud copy. Nothing is ever uploaded, and rename
+  detection is suppressed entirely (a local rename resolves as a local
+  trash + re-download — the cloud is never written).
+
+Mirror semantics in short: the source side wins everywhere — foreign edits
+on the other side are reverted, and deletions propagate from the source.
+Folder cleanup follows the same rule: push prunes remote folders only,
+pull prunes local folders only.
+
+**Empty-source hard guard (data-loss prevention).** A mirror run whose
+*source* side is completely empty would wipe the other side, so the sync
+aborts instead: push with zero local files and a non-empty cloud stops
+with "push source is empty — mirroring would wipe the remote…", and pull
+with an empty cloud and a non-empty vault stops with the mirror message.
+This applies regardless of the sync history and is **not** bypassed by the
+"Sync now (ignore mass-change guard)" command — if you truly want an empty
+mirror, empty the target yourself first. (The regular mass-change guard
+keeps applying everywhere else.)
+
+When to use which: keep **two-way** for normal multi-device work; use
+**push** on a primary/backup device whose vault should be replicated
+verbatim to the cloud (or before handing the vault to another machine);
+use **pull** on a read-only or freshly reset device that should exactly
+reproduce the cloud without ever writing back.
 
 ## Version history
 

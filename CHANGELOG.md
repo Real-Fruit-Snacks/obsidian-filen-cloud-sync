@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.7.0] — 2026-09-03
+
+### Added
+- **Sync directions**: a per-device "Sync direction" setting with three
+  modes. Two-way is the default and unchanged. **Push** mirrors the vault
+  onto Filen (uploads local changes, trashes remote files deleted locally,
+  and reverts foreign cloud edits by re-uploading — never downloads);
+  **Pull** mirrors Filen onto the vault (symmetric — never uploads).
+  Mirror modes resolve every divergence deterministically (no conflict
+  records), prune folders only on the mirror-target side, and pull
+  suppresses server-side renames entirely.
+- **Empty-source hard guard** (data-loss prevention): a push run with zero
+  local files and a non-empty cloud — or a pull run with an empty cloud
+  and a non-empty vault — aborts with a clear error instead of wiping the
+  target, regardless of sync history; the "Sync now (ignore mass-change
+  guard)" command does not bypass it.
+
 ## [0.6.9] — 2026-09-02
 
 ### Changed

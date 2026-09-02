@@ -745,3 +745,414 @@ describe("planner never plans the shared-preferences file (v0.5.0)", () => {
 		expect(plan.ops[0]?.path).toBe("note.md");
 	});
 });
+
+/* ---------------- v0.7.0: sync directions (push / pull mirrors) ---------------- */
+
+describe("push mode — mirror local → cloud (decision table)", () => {
+	const push = (overrides: Partial<PlannerOptions> = {}): PlannerOptions =>
+		opts({ syncDirection: "push", ...overrides });
+
+	it("local only, no base → upload", () => {
+		const plan = planSync(localTree(lf("a.md")), remoteTree(), new Map([["x", base()]]), push());
+		expect(kinds(plan.ops).sort()).toEqual(["dropBase", "upload"]);
+	});
+
+	it("local only, base exists, local UNCHANGED → upload (remote was deleted; mirror re-uploads)", () => {
+		const plan = planSync(
+			localTree(lf("a.md")), remoteTree(),
+			new Map([["a.md", base(T0, 100, "u1")]]), push(),
+		);
+		expect(kinds(plan.ops)).toEqual(["upload"]);
+	});
+
+	// A neutral synced file keeps the LOCAL tree non-empty so the
+	// empty-source hard guard (tested separately below) does not abort.
+	const withLocalAnchor = {
+		local: () => localTree(lf("keep.md")),
+		remote: (...files: RemoteFile[]) => remoteTree(rf("keep.md", "uk"), ...files),
+		base: (...entries: Array<[string, BaseRecord]>) =>
+			new Map([["keep.md", base(T0, 100, "uk")], ...entries]),
+	};
+
+	it("remote only, no base → trashRemote (never local in a mirror of the vault)", () => {
+		const plan = planSync(
+			withLocalAnchor.local(), withLocalAnchor.remote(rf("a.md", "u1")),
+			withLocalAnchor.base(), push(),
+		);
+		expect(kinds(plan.ops)).toEqual(["trashRemote"]);
+		expect(plan.ops[0]?.path).toBe("a.md");
+		expect(plan.ops[0]?.remote?.uuid).toBe("u1");
+	});
+
+	it("remote only, base exists, remote unchanged → trashRemote", () => {
+		const plan = planSync(
+			withLocalAnchor.local(), withLocalAnchor.remote(rf("a.md", "u1")),
+			withLocalAnchor.base(["a.md", base(T0, 100, "u1")]), push(),
+		);
+		expect(kinds(plan.ops)).toEqual(["trashRemote"]);
+	});
+
+	it("remote only, base exists, remote CHANGED → still trashRemote (any remote state)", () => {
+		const plan = planSync(
+			withLocalAnchor.local(), withLocalAnchor.remote(rf("a.md", "u2")),
+			withLocalAnchor.base(["a.md", base(T0, 100, "u1")]), push(),
+		);
+		expect(kinds(plan.ops)).toEqual(["trashRemote"]);
+	});
+
+	it("both exist, neither changed → nothing", () => {
+		const plan = planSync(
+			localTree(lf("a.md")), remoteTree(rf("a.md", "u1")),
+			new Map([["a.md", base(T0, 100, "u1")]]), push(),
+		);
+		expect(plan.ops).toHaveLength(0);
+	});
+
+	it("both exist, stat-equal despite stale base → refreshBase (equality short-circuit first)", () => {
+		const plan = planSync(
+			localTree(lf("a.md", T0 + 500)), remoteTree(rf("a.md", "u2", T0 + 900)),
+			new Map([["a.md", base(T0, 100, "u1")]]), push(),
+		);
+		expect(kinds(plan.ops)).toEqual(["refreshBase"]);
+	});
+
+	it("hash-confirm equality still short-circuits in push → refreshBase, no upload", () => {
+		const remote = rf("a.md", "u2", T0 + 60_000, 100, "hashABC");
+		const plan = planSync(
+			localTree(lf("a.md", T0)), remoteTree(remote),
+			new Map([["a.md", base(T0, 100, "u1")]]),
+			push({ localHashes: new Map([["a.md", "hashABC"]]) }),
+		);
+		expect(kinds(plan.ops)).toEqual(["refreshBase"]);
+	});
+
+	it("local changed only → upload", () => {
+		const plan = planSync(
+			localTree(lf("a.md", T0 + 5000)), remoteTree(rf("a.md", "u1")),
+			new Map([["a.md", base(T0, 100, "u1")]]), push(),
+		);
+		expect(kinds(plan.ops)).toEqual(["upload"]);
+	});
+
+	it("remote changed only (foreign cloud edit) → upload REVERTS it, no conflict record", () => {
+		const plan = planSync(
+			localTree(lf("a.md")), remoteTree(rf("a.md", "u2", T0, 101)),
+			new Map([["a.md", base(T0, 100, "u1")]]), push(),
+		);
+		expect(kinds(plan.ops)).toEqual(["upload"]);
+		expect(plan.conflicts).toHaveLength(0);
+	});
+
+	it("both changed → upload (local wins), NO conflict record", () => {
+		const plan = planSync(
+			localTree(lf("a.md", T0 + 5000, 110)), remoteTree(rf("a.md", "u2", T0 + 3000, 120)),
+			new Map([["a.md", base(T0, 100, "u1")]]), push(),
+		);
+		expect(kinds(plan.ops)).toEqual(["upload"]);
+		expect(plan.conflicts).toHaveLength(0);
+	});
+
+	it("both new (no base, both-nonempty seed) → upload, NO conflict record", () => {
+		const plan = planSync(
+			localTree(lf("a.md", T0, 50)), remoteTree(rf("a.md", "u1", T0 + 9999, 60)),
+			new Map(), push(),
+		);
+		expect(plan.seedMode).toBe("both-nonempty");
+		expect(kinds(plan.ops)).toEqual(["upload"]);
+		expect(plan.conflicts).toHaveLength(0);
+	});
+
+	it("history-only record → dropBase", () => {
+		const plan = planSync(localTree(), remoteTree(), new Map([["a.md", base()]]), push());
+		expect(kinds(plan.ops)).toEqual(["dropBase"]);
+	});
+
+	it("renameRemote is KEPT in push (hash-matched local rename → server-side rename)", () => {
+		const plan = planSync(
+			localTree(lf("new.md")),
+			remoteTree(rf("old.md", "u1", T0, 100, "hash-1")),
+			new Map([["old.md", base(T0, 100, "u1")]]),
+			push({ localHashes: new Map([["new.md", "hash-1"]]) }),
+		);
+		expect(kinds(plan.ops)).toEqual(["renameRemote"]);
+		expect(plan.ops[0]?.toPath).toBe("new.md");
+	});
+
+	it("folders: push prunes REMOTE folders but never LOCAL folders", () => {
+		const local: LocalTree = {
+			files: new Map(), folders: new Set(["localgone"]),
+			skipped: [], excluded: new Set<string>(), collisions: [],
+		};
+		const remote: RemoteTree = {
+			files: new Map(),
+			folders: new Map([["", "root"], ["gone", "uuid-gone"]]),
+		};
+		const baseMap = new Map([
+			["gone/f.md", base()],
+			["localgone/f.md", base()],
+		]);
+		const plan = planSync(local, remote, baseMap, push());
+		expect(plan.ops.some(op => op.kind === "trashRemoteDir" && op.path === "gone")).toBe(true);
+		expect(plan.ops.some(op => op.kind === "trashLocalDir")).toBe(false);
+	});
+});
+
+describe("pull mode — mirror cloud → local (decision table)", () => {
+	const pull = (overrides: Partial<PlannerOptions> = {}): PlannerOptions =>
+		opts({ syncDirection: "pull", ...overrides });
+
+	it("remote only, no base → download", () => {
+		const plan = planSync(localTree(), remoteTree(rf("a.md", "u1")), new Map(), pull());
+		expect(kinds(plan.ops)).toEqual(["download"]);
+	});
+
+	it("remote only, base exists, remote UNCHANGED → download (local was deleted; mirror re-downloads)", () => {
+		const plan = planSync(
+			localTree(), remoteTree(rf("a.md", "u1")),
+			new Map([["a.md", base(T0, 100, "u1")]]), pull(),
+		);
+		expect(kinds(plan.ops)).toEqual(["download"]);
+	});
+
+	// A neutral synced file keeps the REMOTE tree non-empty so the
+	// empty-source hard guard (tested separately below) does not abort.
+	const withRemoteAnchor = {
+		local: (...files: LocalFile[]) => localTree(lf("keep.md"), ...files),
+		remote: () => remoteTree(rf("keep.md", "uk")),
+		base: (...entries: Array<[string, BaseRecord]>) =>
+			new Map([["keep.md", base(T0, 100, "uk")], ...entries]),
+	};
+
+	it("local only, no base → trashLocal (never remote in a mirror of the cloud)", () => {
+		const plan = planSync(
+			withRemoteAnchor.local(lf("a.md")), withRemoteAnchor.remote(),
+			withRemoteAnchor.base(), pull(),
+		);
+		expect(kinds(plan.ops)).toEqual(["trashLocal"]);
+		expect(plan.ops[0]?.path).toBe("a.md");
+	});
+
+	it("local only, base exists, local unchanged → trashLocal", () => {
+		const plan = planSync(
+			withRemoteAnchor.local(lf("a.md")), withRemoteAnchor.remote(),
+			withRemoteAnchor.base(["a.md", base(T0, 100, "u1")]), pull(),
+		);
+		expect(kinds(plan.ops)).toEqual(["trashLocal"]);
+	});
+
+	it("local only, base exists, local CHANGED → still trashLocal (any local state)", () => {
+		const plan = planSync(
+			withRemoteAnchor.local(lf("a.md", T0 + 5000)), withRemoteAnchor.remote(),
+			withRemoteAnchor.base(["a.md", base(T0, 100, "u1")]), pull(),
+		);
+		expect(kinds(plan.ops)).toEqual(["trashLocal"]);
+	});
+
+	it("both exist, neither changed → nothing", () => {
+		const plan = planSync(
+			localTree(lf("a.md")), remoteTree(rf("a.md", "u1")),
+			new Map([["a.md", base(T0, 100, "u1")]]), pull(),
+		);
+		expect(plan.ops).toHaveLength(0);
+	});
+
+	it("both exist, stat-equal despite stale base → refreshBase (equality short-circuit first)", () => {
+		const plan = planSync(
+			localTree(lf("a.md", T0 + 500)), remoteTree(rf("a.md", "u2", T0 + 900)),
+			new Map([["a.md", base(T0, 100, "u1")]]), pull(),
+		);
+		expect(kinds(plan.ops)).toEqual(["refreshBase"]);
+	});
+
+	it("hash-confirm equality still short-circuits in pull → refreshBase, no download", () => {
+		const remote = rf("a.md", "u2", T0 + 60_000, 100, "hashABC");
+		const plan = planSync(
+			localTree(lf("a.md", T0)), remoteTree(remote),
+			new Map([["a.md", base(T0, 100, "u1")]]),
+			pull({ localHashes: new Map([["a.md", "hashABC"]]) }),
+		);
+		expect(kinds(plan.ops)).toEqual(["refreshBase"]);
+	});
+
+	it("remote changed only → download", () => {
+		const plan = planSync(
+			localTree(lf("a.md")), remoteTree(rf("a.md", "u2", T0, 101)),
+			new Map([["a.md", base(T0, 100, "u1")]]), pull(),
+		);
+		expect(kinds(plan.ops)).toEqual(["download"]);
+		expect(plan.ops[0]?.remote?.uuid).toBe("u2");
+	});
+
+	it("local changed only (foreign local edit) → download REVERTS it, no conflict record", () => {
+		const plan = planSync(
+			localTree(lf("a.md", T0 + 5000, 110)), remoteTree(rf("a.md", "u1")),
+			new Map([["a.md", base(T0, 100, "u1")]]), pull(),
+		);
+		expect(kinds(plan.ops)).toEqual(["download"]);
+		expect(plan.conflicts).toHaveLength(0);
+	});
+
+	it("both changed → download (remote wins), NO conflict record", () => {
+		const plan = planSync(
+			localTree(lf("a.md", T0 + 5000, 110)), remoteTree(rf("a.md", "u2", T0 + 3000, 120)),
+			new Map([["a.md", base(T0, 100, "u1")]]), pull(),
+		);
+		expect(kinds(plan.ops)).toEqual(["download"]);
+		expect(plan.conflicts).toHaveLength(0);
+	});
+
+	it("both new (no base, both-nonempty seed) → download, NO conflict record", () => {
+		const plan = planSync(
+			localTree(lf("a.md", T0, 50)), remoteTree(rf("a.md", "u1", T0 + 9999, 60)),
+			new Map(), pull(),
+		);
+		expect(plan.seedMode).toBe("both-nonempty");
+		expect(kinds(plan.ops)).toEqual(["download"]);
+		expect(plan.conflicts).toHaveLength(0);
+	});
+
+	it("history-only record → dropBase", () => {
+		const plan = planSync(localTree(), remoteTree(), new Map([["a.md", base()]]), pull());
+		expect(kinds(plan.ops)).toEqual(["dropBase"]);
+	});
+
+	it("renameRemote is SUPPRESSED in pull — a local rename resolves as trashLocal + download", () => {
+		const plan = planSync(
+			localTree(lf("new.md")),
+			remoteTree(rf("old.md", "u1", T0, 100, "hash-1")),
+			new Map([["old.md", base(T0, 100, "u1")]]),
+			pull({ localHashes: new Map([["new.md", "hash-1"]]) }),
+		);
+		expect(kinds(plan.ops)).not.toContain("renameRemote");
+		expect(plan.ops.some(op => op.kind === "trashLocal" && op.path === "new.md")).toBe(true);
+		expect(plan.ops.some(op => op.kind === "download" && op.path === "old.md")).toBe(true);
+		expect(plan.counts.renames).toBe(0);
+	});
+
+	it("folders: pull prunes LOCAL folders but never REMOTE folders", () => {
+		const local: LocalTree = {
+			files: new Map(), folders: new Set(["localgone"]),
+			skipped: [], excluded: new Set<string>(), collisions: [],
+		};
+		const remote: RemoteTree = {
+			files: new Map(),
+			folders: new Map([["", "root"], ["gone", "uuid-gone"]]),
+		};
+		const baseMap = new Map([
+			["gone/f.md", base()],
+			["localgone/f.md", base()],
+		]);
+		const plan = planSync(local, remote, baseMap, pull());
+		expect(plan.ops.some(op => op.kind === "trashLocalDir" && op.path === "localgone")).toBe(true);
+		expect(plan.ops.some(op => op.kind === "trashRemoteDir")).toBe(false);
+	});
+
+	it("mkdir follows the mirror target: pull creates local folders, never remote ones", () => {
+		const local: LocalTree = {
+			files: new Map(), folders: new Set(["onlylocal"]),
+			skipped: [], excluded: new Set<string>(), collisions: [],
+		};
+		const remote: RemoteTree = {
+			files: new Map([["rdir/b.md", rf("rdir/b.md", "u1")]]),
+			folders: new Map([["", "root"], ["rdir", "uuid-rdir"]]),
+		};
+		const plan = planSync(local, remote, new Map(), pull());
+		expect(plan.ops.some(op => op.kind === "mkdirLocal" && op.path === "rdir")).toBe(true);
+		expect(plan.ops.some(op => op.kind === "mkdirRemote")).toBe(false);
+	});
+
+	it("mkdir follows the mirror target: push creates remote folders, never local ones", () => {
+		const local: LocalTree = {
+			files: new Map([["ldir/a.md", lf("ldir/a.md")]]), folders: new Set(["ldir"]),
+			skipped: [], excluded: new Set<string>(), collisions: [],
+		};
+		const remote: RemoteTree = {
+			files: new Map(),
+			folders: new Map([["", "root"], ["onlyremote", "uuid-or"]]),
+		};
+		const plan = planSync(local, remote, new Map(), opts({ syncDirection: "push" }));
+		expect(plan.ops.some(op => op.kind === "mkdirRemote" && op.path === "ldir")).toBe(true);
+		expect(plan.ops.some(op => op.kind === "mkdirLocal")).toBe(false);
+	});
+});
+
+describe("empty-source hard guard (v0.7.0, data-loss prevention)", () => {
+	it("push with zero local files + non-empty remote → abort with the spec message", () => {
+		const plan = planSync(
+			localTree(), remoteTree(rf("a.md", "u1")),
+			new Map(), opts({ syncDirection: "push" }),
+		);
+		expect(plan.aborted).toBe(true);
+		expect(plan.abortReason).toBe(
+			"push source is empty — mirroring would wipe the remote; this is almost "
+			+ "certainly wrong (seed the vault or switch to two-way/pull)",
+		);
+		expect(plan.ops).toHaveLength(0);
+	});
+
+	it("push empty-source guard applies REGARDLESS of base state", () => {
+		const plan = planSync(
+			localTree(), remoteTree(rf("a.md", "u1")),
+			new Map([["a.md", base(T0, 100, "u1")]]), opts({ syncDirection: "push" }),
+		);
+		expect(plan.aborted).toBe(true);
+		expect(plan.abortReason).toMatch(/push source is empty/);
+	});
+
+	it("push empty-source guard is NOT bypassed by ignoreMassChangeGuard", () => {
+		const plan = planSync(
+			localTree(), remoteTree(rf("a.md", "u1")),
+			new Map(), opts({ syncDirection: "push", ignoreMassChangeGuard: true }),
+		);
+		expect(plan.aborted).toBe(true);
+		expect(plan.abortReason).toMatch(/push source is empty/);
+	});
+
+	it("pull with empty remote + non-empty local → abort with the mirror message", () => {
+		const plan = planSync(
+			localTree(lf("a.md")), remoteTree(),
+			new Map(), opts({ syncDirection: "pull" }),
+		);
+		expect(plan.aborted).toBe(true);
+		expect(plan.abortReason).toBe(
+			"pull source is empty — mirroring would wipe the local vault; this is almost "
+			+ "certainly wrong (seed the remote or switch to two-way/push)",
+		);
+		expect(plan.ops).toHaveLength(0);
+	});
+
+	it("pull empty-source guard applies regardless of base and is not bypassed by the command flag", () => {
+		const plan = planSync(
+			localTree(lf("a.md")), remoteTree(),
+			new Map([["a.md", base(T0, 100, "u1")]]),
+			opts({ syncDirection: "pull", ignoreMassChangeGuard: true }),
+		);
+		expect(plan.aborted).toBe(true);
+		expect(plan.abortReason).toMatch(/pull source is empty/);
+	});
+
+	it("guard does not fire when the source is non-empty (normal push/pull runs)", () => {
+		const pushPlan = planSync(
+			localTree(lf("a.md")), remoteTree(rf("b.md", "u1")),
+			new Map(), opts({ syncDirection: "push" }),
+		);
+		expect(pushPlan.aborted).toBe(false);
+		const pullPlan = planSync(
+			localTree(lf("a.md")), remoteTree(rf("b.md", "u1")),
+			new Map(), opts({ syncDirection: "pull" }),
+		);
+		expect(pullPlan.aborted).toBe(false);
+	});
+
+	it("both sides empty → no guard, no ops (nothing to mirror)", () => {
+		const plan = planSync(localTree(), remoteTree(), new Map(), opts({ syncDirection: "push" }));
+		expect(plan.aborted).toBe(false);
+		expect(plan.ops).toHaveLength(0);
+	});
+
+	it("two-way is unaffected by the guard (empty local + remote files seeds a download)", () => {
+		const plan = planSync(localTree(), remoteTree(rf("a.md", "u1")), new Map(), opts());
+		expect(plan.aborted).toBe(false);
+		expect(plan.seedMode).toBe("download-all");
+	});
+});

@@ -411,14 +411,16 @@ export class SyncEngine {
 			configDir: this.vault.configDir,
 			protectPath: (path: string) => this.protectConfigPath(path),
 			skipRemoteFolderPrune: remoteFromCache,
+			syncDirection: settings.syncDirection,
 		};
 		let plan = planSync(local, remote, this.base, plannerOptions);
 		let guardWouldAbort = false;
-		if (options.dryRun && plan.aborted) {
+		if (options.dryRun && plan.aborted && (plan.abortReason ?? "").startsWith("mass-change guard")) {
 			// Dry run: the guard must NOT abort — flag that it WOULD trip and
 			// re-plan with the guard off so the preview lists the full op set.
-			// (plan.aborted is set ONLY by the mass-change guard; planSync is
-			// pure and never touches the base map.)
+			// (Only the mass-change guard is bypassed this way; the v0.7.0
+			// empty-source hard guard aborts dry runs too — planSync is pure
+			// and never touches the base map.)
 			guardWouldAbort = true;
 			this.log.warn(`dry run: ${plan.abortReason ?? "mass-change guard would abort this run"}`);
 			plan = planSync(local, remote, this.base, { ...plannerOptions, ignoreMassChangeGuard: true });

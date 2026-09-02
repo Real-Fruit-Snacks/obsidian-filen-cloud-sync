@@ -7,7 +7,7 @@ import { AbstractInputSuggest, App, Notice, PluginSettingTab, Setting, TextAreaC
 import { setDebugLogging } from "./debug";
 import { FilenApiError, FilenClient } from "./filen/client";
 import { obsidianHttp } from "./http";
-import { ConflictPolicy } from "./sync/types";
+import { ConflictPolicy, SyncDirection } from "./sync/types";
 import { applyPrefs } from "./sync/sharedPrefs";
 import { buildSetupUri, parseSetupUri } from "./sync/setupTransfer";
 import { clearCredentials, clearState, loadCredentials, loadDeviceId, saveCredentials } from "./sync/state";
@@ -29,6 +29,7 @@ export interface FilenSyncSettings {
 	syncIntervalMinutes: number;
 	autoSyncOnStart: boolean;
 	syncOnSave: boolean;
+	syncDirection: SyncDirection; // v0.7.0: two-way / push / pull (per-device, never shared)
 	conflictPolicy: ConflictPolicy;
 	conflictResolution: "auto" | "ask"; // v0.4.0 E: interactive merge view for text conflicts
 	fastRemotePolling: boolean; // v0.4.0 D: events probe + cached remote tree
@@ -56,6 +57,7 @@ export function defaultSettings(vaultName: string): FilenSyncSettings {
 		syncIntervalMinutes: 10,
 		autoSyncOnStart: true,
 		syncOnSave: true,
+		syncDirection: "twoWay",
 		conflictPolicy: "keep_both",
 		conflictResolution: "auto",
 		fastRemotePolling: true,
@@ -298,6 +300,25 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
+		// v0.7.0: per-device sync direction (NOT a shared-settings key —
+		// which device pushes/pulls is inherently a per-device choice).
+		new Setting(containerEl)
+			.setName("Sync direction")
+			.setDesc(
+				"Push and pull are MIRRORS: the source side wins everywhere — foreign "
+				+ "edits on the other side are reverted, and deletions propagate from "
+				+ "the source.",
+			)
+			.addDropdown(dropdown => dropdown
+				.addOption("twoWay", "Two-way (sync both ways)")
+				.addOption("push", "Push (this device overwrites the cloud)")
+				.addOption("pull", "Pull (the cloud overwrites this device)")
+				.setValue(this.plugin.settings.syncDirection)
+				.onChange(async value => {
+					this.plugin.settings.syncDirection = value as SyncDirection;
+					await this.plugin.saveSettings();
+				}));
+
 		new Setting(containerEl)
 			.setName("Conflict policy")
 			.setDesc("What to do when both sides changed the same file")
@@ -420,8 +441,8 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 			.setDesc(
 				"Syncs conflict policy, dotfile rule, ignore patterns, ignored folders and the "
 				+ "config allowlist via an encrypted file in the remote folder. Last writer wins. "
-				+ "Credentials, remote folder, sync intervals, size limits and debug/device "
-				+ "options always stay per-device.",
+				+ "Credentials, remote folder, sync direction, sync intervals, size limits and "
+				+ "debug/device options always stay per-device.",
 			)
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.shareSettings)

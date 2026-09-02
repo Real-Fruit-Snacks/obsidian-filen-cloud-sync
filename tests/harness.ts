@@ -412,6 +412,10 @@ export function makeEngine(conflictResolver?: ConflictResolver) {
 	const storage = new Map<string, string | null>();
 	const app = {
 		vault,
+		// FileManager.trashFile (user deletion preference) → plain fake trash.
+		fileManager: {
+			trashFile: async (file: { path: string }) => vault.trash(file),
+		},
 		loadLocalStorage: (key: string) => storage.get(key) ?? null,
 		saveLocalStorage: (key: string, value: string | null) => {
 			storage.set(key, value);

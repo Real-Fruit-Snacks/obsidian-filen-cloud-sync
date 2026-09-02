@@ -47,3 +47,26 @@ export class Setting {
 		return this;
 	}
 }
+
+/** Minimal stubs so src/settings.ts imports cleanly (never rendered). */
+export class PluginSettingTab {
+	constructor(public app: App, public plugin: unknown) {}
+}
+
+export class Notice {
+	constructor(public message: string) {}
+}
+
+export class TFolder {}
+
+export class AbstractInputSuggest<T> {
+	constructor(public app: App, public inputEl: unknown) {}
+}
+
+export class TextComponent {
+	inputEl: { type: string; rows: number } = { type: "", rows: 0 };
+}
+
+export class TextAreaComponent {
+	inputEl: { rows: number } = { rows: 0 };
+}

@@ -24,6 +24,9 @@ is never stored. Works on **desktop and mobile**.
   removed.
 - **Desktop and mobile** — no Node dependencies, no proxy server. Runs
   as-is inside Obsidian on iOS and Android.
+- **Sync directions** — two-way by default, or one-way mirrors: push (this
+  device overwrites the cloud) and pull (the cloud overwrites this device),
+  with a hard guard that refuses to mirror an empty source over your data.
 - **Conflict handling** — keep both copies by default, keep-newer optional,
   or a side-by-side merge view ("ask" mode) when you want to decide.
 - **Version history** — browse and restore Filen file versions from the
