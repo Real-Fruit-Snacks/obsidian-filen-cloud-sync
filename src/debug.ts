@@ -32,6 +32,13 @@ export function safeUrl(url: string): string {
 export function debugLog(tag: string, message: string, data?: unknown): void {
 	if (!enabled) return;
 	const stamp = new Date().toISOString();
-	// Single gated console call for the whole plugin (opt-in debug log only).
-	console.log(`[filen-cloud-sync] ${stamp} [${tag}] ${message}`, ...(data !== undefined ? [data] : []));
+	// The plugin's single console call site (opt-in debug log only — off by
+	// default, secrets never logged). Direct call, not a bound alias: tests
+	// spy on console.log and a top-level bind would capture the unspied
+	// original.
+	if (data !== undefined) {
+		console.log(`[filen-cloud-sync] ${stamp} [${tag}] ${message}`, data);
+	} else {
+		console.log(`[filen-cloud-sync] ${stamp} [${tag}] ${message}`);
+	}
 }

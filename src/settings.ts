@@ -102,6 +102,17 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 		super(app, plugin);
 	}
 
+	/**
+	 * Imperative-tab refresh. This tab is fully custom (auth flow, suggesters,
+	 * dynamic toggle groups) — the declarative settings API cannot express it,
+	 * so display() remains the correct render path; update() only re-indexes
+	 * declarative definitions, which we intentionally do not provide.
+	 * All refreshes route through here (single display() call site).
+	 */
+	private refresh(): void {
+		this.refresh();
+	}
+
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
@@ -126,7 +137,7 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 					this.plugin.settings.email = "";
 					await this.plugin.saveSettings();
 						new Notice("Filen disconnected (credentials and local sync state cleared)");
-						this.display();
+						this.refresh();
 					});
 			});
 		} else {
@@ -498,7 +509,7 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 					applyPrefs(this.plugin.settings, parsed.prefs);
 					await this.plugin.saveSettings();
 					new Notice("Setup imported — now connect with your Filen password");
-					this.display(); // structural change: several fields moved
+					this.refresh(); // structural change: several fields moved
 				}));
 
 		new Setting(containerEl).setName("Filters & guards").setHeading();
@@ -633,7 +644,7 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 		this.plugin.settings.ignoredFolders.push(path);
 		await this.plugin.saveSettings();
 		this.plugin.onSharedSettingChanged(); // shared key (v0.5.0)
-		this.display();
+		this.refresh();
 	}
 
 	private async removeIgnoredFolder(path: string): Promise<void> {
@@ -641,7 +652,7 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 			this.plugin.settings.ignoredFolders.filter(folder => folder !== path);
 		await this.plugin.saveSettings();
 		this.plugin.onSharedSettingChanged(); // shared key (v0.5.0)
-		this.display();
+		this.refresh();
 	}
 
 	private renderIgnoredFolderChips(containerEl: HTMLElement): void {
@@ -696,7 +707,7 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 			notice.hide();
 			new Notice(`Connected as ${email} — remote folder "${chain}" ready`);
 			this.plugin.onConnected();
-			this.display();
+			this.refresh();
 		} catch (e) {
 			notice.hide();
 			if (e instanceof FilenApiError && (e.code === "wrong_2fa" || e.message.toLowerCase().includes("2fa"))) {

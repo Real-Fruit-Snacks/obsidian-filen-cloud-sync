@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.7] — 2026-09-02
+
+### Fixed
+- Self-test modal layout: rows are now a header line (badge, label, duration)
+  with the detail indented below — no more wrapped/overlapping first row.
+
+## [0.6.6] — 2026-09-02
+
+### Fixed
+- Community-review follow-up: settings-tab refreshes route through one
+  documented wrapper (the tab is fully imperative; declarative definitions
+  intentionally not provided — see the note in settings.ts), and the debug
+  logger binds its single console call once.
+
 ## [0.6.5] — 2026-09-02
 
 ### Fixed

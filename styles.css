@@ -131,16 +131,18 @@
 }
 
 .filen-cloud-sync-selftest-row {
+	padding: 6px 0;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.filen-cloud-sync-selftest-head {
 	display: flex;
 	align-items: baseline;
-	gap: 8px;
-	padding: 4px 0;
-	border-bottom: 1px solid var(--background-modifier-border);
-	flex-wrap: wrap;
+	gap: 10px;
 }
 
 .filen-cloud-sync-selftest-mark {
-	min-width: 4.2em; /* text badges (PASS/FAIL/RUN/WAIT), not single glyphs */
+	min-width: 3.4em; /* text badges (PASS/FAIL/RUN/WAIT), not single glyphs */
 	font-family: var(--font-monospace);
 	font-size: var(--font-ui-smaller);
 	font-weight: var(--font-bold);
@@ -155,15 +157,26 @@
 	flex: 1;
 }
 
-.filen-cloud-sync-selftest-detail {
+.filen-cloud-sync-selftest-time {
+	margin-left: auto;
+	flex-shrink: 0;
 	color: var(--text-muted);
+	font-family: var(--font-monospace);
 	font-size: var(--font-ui-smaller);
 }
 
+.filen-cloud-sync-selftest-detail {
+	margin-left: calc(3.4em + 10px); /* aligned under the label */
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	overflow-wrap: anywhere; /* long emails/paths wrap cleanly */
+}
+
 .filen-cloud-sync-selftest-error {
-	flex-basis: 100%;
+	margin-left: calc(3.4em + 10px);
 	font-size: var(--font-ui-smaller);
 	user-select: text;
+	overflow-wrap: anywhere;
 }
 
 /* Conflict merge modal (v0.4.0 feature E) */

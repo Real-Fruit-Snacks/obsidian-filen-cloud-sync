@@ -242,15 +242,21 @@ export class SelfTestModal extends Modal {
 			const mark = stage.status === "ok" ? "PASS"
 				: stage.status === "failed" ? "FAIL"
 					: stage.status === "running" ? "RUN" : "WAIT";
-			const markEl = row.createSpan({ cls: "filen-cloud-sync-selftest-mark" });
+			// Header line: [badge] [label] [right-aligned duration]
+			const head = row.createDiv({ cls: "filen-cloud-sync-selftest-head" });
+			const markEl = head.createSpan({ cls: "filen-cloud-sync-selftest-mark" });
 			markEl.setText(mark);
 			if (stage.status === "failed") markEl.addClass("filen-cloud-sync-log-error");
 			if (stage.status === "ok") markEl.addClass("filen-cloud-sync-selftest-ok");
-			const label = row.createSpan({ cls: "filen-cloud-sync-selftest-label" });
+			const label = head.createSpan({ cls: "filen-cloud-sync-selftest-label" });
 			label.setText(`${index + 1}. ${stage.label}`);
-			const right = row.createSpan({ cls: "filen-cloud-sync-selftest-detail" });
 			if (stage.status === "ok" || stage.status === "failed") {
-				right.setText(`${stage.detail ?? stage.error ?? ""} (${stage.durationMs} ms)`.trim());
+				head.createSpan({ cls: "filen-cloud-sync-selftest-time" })
+					.setText(`${stage.durationMs} ms`);
+			}
+			// Detail line: indented under the label, free to wrap
+			if ((stage.status === "ok" || stage.status === "failed") && stage.detail) {
+				row.createDiv({ cls: "filen-cloud-sync-selftest-detail" }).setText(stage.detail);
 			}
 			if (stage.error) {
 				const err = row.createDiv({ cls: "filen-cloud-sync-selftest-error filen-cloud-sync-log-error" });
