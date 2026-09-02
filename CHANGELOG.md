@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.4] — 2026-09-03
+
+### Changed
+- The dashboard now shows the current default sync direction as static text
+  ("Default direction: …") under the one-time run row — no need to open
+  the dropdown or settings to check.
+
 ## [0.7.3] — 2026-09-03
 
 ### Changed

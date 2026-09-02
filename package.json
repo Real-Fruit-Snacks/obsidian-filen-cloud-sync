@@ -1,6 +1,6 @@
 {
   "name": "filen-cloud-sync",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "description": "Two-way sync between an Obsidian vault and Filen (zero-knowledge E2EE cloud).",
   "main": "main.js",
   "directories": {

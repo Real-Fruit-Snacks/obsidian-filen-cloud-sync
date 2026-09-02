@@ -202,8 +202,8 @@ export class FilenSyncDashboardView extends ItemView {
 		});
 		buttons.createDiv({ cls: "filen-cloud-sync-dashboard-muted" })
 			.setText(
-				"Push/Pull run once with that direction — your default "
-				+ `(${directionLabel(this.deps.getSyncDirection())}) is unchanged.`,
+				`Default direction: ${directionLabel(this.deps.getSyncDirection())}. `
+				+ "One-time run uses the dropdown selection — the default is unchanged.",
 			);
 		// v0.7.1 feature B: Pause while running, Resume in the banner above.
 		if (!paused) {
