@@ -6,6 +6,7 @@
 import { AbstractInputSuggest, App, Notice, PluginSettingTab, Setting, TextAreaComponent, TextComponent, TFolder } from "obsidian";
 import { setDebugLogging } from "./debug";
 import { FilenApiError, FilenClient } from "./filen/client";
+import type { HttpFn } from "./filen/types";
 import { obsidianHttp } from "./http";
 import { ConflictPolicy, SyncDirection } from "./sync/types";
 import { applyPrefs } from "./sync/sharedPrefs";
@@ -100,10 +101,13 @@ export function resolveRemoteFolder(template: string, vaultName: string): string
 export class FilenSyncSettingTab extends PluginSettingTab {
 	private passwordValue = "";
 	private twoFactorValue = "";
+	/** Direction chosen in the connect form (v0.7.2) — applied on successful connect. */
+	private connectDirection: SyncDirection = "twoWay";
 	private folderInput: TextComponent | null = null;
 
 	constructor(app: App, private readonly plugin: FilenSyncPlugin) {
 		super(app, plugin);
+		this.connectDirection = this.plugin.settings.syncDirection;
 	}
 
 	/**
@@ -175,6 +179,22 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 					.onChange(value => {
 						this.twoFactorValue = value.trim();
 					}));
+			new Setting(containerEl)
+				.setName("This device will sync")
+				.setDesc(
+					"Choose before connecting — it decides what your first sync does. "
+					+ "Pull never uploads (safe for receive-only devices); "
+					+ "push never downloads and overwrites the cloud. Changeable later.",
+				)
+				.addDropdown(dropdown => dropdown
+					.addOption("twoWay", "Both ways (sync everything)")
+					.addOption("pull", "Download only (receive changes)")
+					.addOption("push", "Upload only (mirror this vault to the cloud)")
+					.setValue(this.connectDirection)
+					.onChange(value => {
+						this.connectDirection = value as SyncDirection;
+					}));
+
 			new Setting(containerEl)
 				.setName("Connect")
 				.setDesc("Verify credentials and resolve the remote sync folder")
@@ -707,7 +727,7 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 		}
 	}
 
-	private async connectFlow(buttonEl: HTMLButtonElement): Promise<void> {
+	private async connectFlow(buttonEl: HTMLButtonElement, httpFn?: HttpFn): Promise<void> {
 		const email = this.plugin.settings.email.trim();
 		const password = this.passwordValue;
 		if (email.length === 0 || password.length === 0) {
@@ -717,7 +737,7 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 		buttonEl.disabled = true;
 		const notice = new Notice("Connecting to Filen…", 0);
 		try {
-			const client = new FilenClient(obsidianHttp);
+			const client = new FilenClient(httpFn ?? obsidianHttp);
 			const credentials = await client.connect(
 				email,
 				password,
@@ -739,6 +759,10 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 			}
 			this.passwordValue = "";
 			this.twoFactorValue = "";
+			// First-run role declaration (v0.7.2): the direction chosen in the
+			// connect form applies from the very first sync.
+			this.plugin.settings.syncDirection = this.connectDirection;
+			await this.plugin.saveSettings();
 			notice.hide();
 			new Notice(`Connected as ${email} — remote folder "${chain}" ready`);
 			this.plugin.onConnected();

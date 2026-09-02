@@ -55,6 +55,8 @@ export class PluginSettingTab {
 
 export class Notice {
 	constructor(public message: string) {}
+
+	hide(): void { /* stub */ }
 }
 
 export class TFolder {}

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.2] — 2026-09-03
+
+### Added
+- **Direction picker in the connect form**: choose "Both ways / Download
+  only (pull) / Upload only (push)" before the first connection, so a fresh
+  device never syncs the wrong way by default. Applied from the very first
+  sync; changeable later in settings.
+
 ## [0.7.1] — 2026-09-03
 
 ### Added
