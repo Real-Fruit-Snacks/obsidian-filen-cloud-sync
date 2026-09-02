@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.5] — 2026-09-02
+
+### Fixed
+- Self-test modal: status badges (PASS/FAIL/RUN/WAIT) no longer overlap the
+  stage labels.
+
+## [0.6.4] — 2026-09-02
+
+### Fixed
+- Community-review follow-up: timers are now injected (window timers in the
+  shipped bundle, none in test paths); removed a redundant type assertion.
+
 ## [0.6.2] — 2026-09-02
 
 ### Fixed

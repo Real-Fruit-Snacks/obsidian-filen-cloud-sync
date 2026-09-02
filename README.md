@@ -107,7 +107,7 @@ No telemetry, no third-party servers, no analytics.
 ### Manual
 
 1. Download `main.js`, `manifest.json` and `styles.css` from a release
-   (or unzip `filen-cloud-sync-0.6.3.zip`).
+   (or unzip `filen-cloud-sync-0.6.5.zip`).
 2. Copy them into `<your vault>/.obsidian/plugins/filen-cloud-sync/`.
 3. Enable Community plugins in Obsidian, then enable **Filen Cloud Sync**.
 
@@ -441,7 +441,7 @@ npm install
 npm run build   # tsc type-check + esbuild production bundle (main.js)
 npm run test    # vitest: crypto, planner decision table, client request shapes, utils
 npm run lint    # eslint + eslint-plugin-obsidianmd
-npm run package # build + dist/filen-cloud-sync/ + dist/filen-cloud-sync-0.6.3.zip
+npm run package # build + dist/filen-cloud-sync/ + dist/filen-cloud-sync-0.6.5.zip
 ```
 
 The Filen client is a minimal pure-TypeScript reimplementation

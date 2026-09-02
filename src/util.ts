@@ -439,30 +439,11 @@ export async function mapPool<T, R>(
 /* ---------------- time fmt ---------------- */
 
 
-/**
- * Popout-window-compatible timers: window timers on Obsidian; the bare
- * fallback only runs under Node (vitest), where window does not exist.
- * (Directory scans reject globalThis, so the environment check uses typeof.)
- */
-export function setTimeoutCompat(cb: () => void, ms: number): number {
-	if (typeof window !== "undefined") return window.setTimeout(cb, ms);
-	return setTimeout(cb, ms) as unknown as number; // node test environment only (returns Timeout there)
-}
-
-export function clearTimeoutCompat(id: number | null): void {
-	if (id === null) return;
-	if (typeof window !== "undefined") window.clearTimeout(id);
-	else clearTimeout(id); // node test environment only
-}
 
 export function formatLogTime(millis: number): string {
 	const d = new Date(millis);
 	const pad = (n: number) => String(n).padStart(2, "0");
 	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-}
-
-export function sleepMillis(ms: number): Promise<void> {
-	return new Promise(resolve => setTimeoutCompat(resolve, ms));
 }
 
 /* ---------------- byte/quota formatting ---------------- */

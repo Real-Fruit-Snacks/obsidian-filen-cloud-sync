@@ -18,7 +18,7 @@
 import type { FilenClient } from "../filen/client";
 import type { StoredCredentials } from "../filen/types";
 import type { FilenSyncSettings } from "../settings";
-import { clearTimeoutCompat, setTimeoutCompat, tryDecodeUtf8, utf8ToBytes } from "../util";
+import { tryDecodeUtf8, utf8ToBytes } from "../util";
 import type { SyncLog } from "./log";
 import { scanRemote } from "./remoteScan";
 import {
@@ -44,15 +44,28 @@ export interface SharedPrefsSyncDeps {
 	notify: (message: string) => void;
 	/** Test seam — defaults to SHARED_PREFS_UPLOAD_DEBOUNCE_MS. */
 	debounceMs?: number;
+	/**
+	 * Timer injection (popout-safe window timers on Obsidian; tests inject).
+	 * Required at runtime — the plugin always provides them from main.ts.
+	 */
+	setTimer?: (cb: () => void, ms: number) => number;
+	clearTimer?: (id: number) => void;
 }
 
 export class SharedPrefsSync {
 	private applying = false;
 	private uploadTimer: number | null = null;
 	private readonly debounceMs: number;
+	private readonly setTimerFn: (cb: () => void, ms: number) => number;
+	private readonly clearTimerFn: (id: number) => void;
 
 	constructor(private readonly deps: SharedPrefsSyncDeps) {
 		this.debounceMs = deps.debounceMs ?? SHARED_PREFS_UPLOAD_DEBOUNCE_MS;
+		if (!deps.setTimer || !deps.clearTimer) {
+			throw new Error("SharedPrefsSync: timer deps required (inject from main.ts)");
+		}
+		this.setTimerFn = deps.setTimer;
+		this.clearTimerFn = deps.clearTimer;
 	}
 
 	/** True while remote prefs are being applied (upload path must no-op). */
@@ -96,7 +109,7 @@ export class SharedPrefsSync {
 	/** Toggle off: stop both directions — cancel any pending upload. */
 	disable(): void {
 		if (this.uploadTimer !== null) {
-			clearTimeoutCompat(this.uploadTimer);
+			this.clearTimerFn(this.uploadTimer);
 			this.uploadTimer = null;
 		}
 	}
@@ -109,8 +122,8 @@ export class SharedPrefsSync {
 	onSharedKeyChanged(): void {
 		if (!this.deps.getSettings().shareSettings) return;
 		if (this.applying) return;
-		if (this.uploadTimer !== null) clearTimeoutCompat(this.uploadTimer);
-		this.uploadTimer = setTimeoutCompat(() => {
+		if (this.uploadTimer !== null) this.clearTimerFn(this.uploadTimer);
+		this.uploadTimer = this.setTimerFn(() => {
 			this.uploadTimer = null;
 			void this.uploadNow().catch(e => {
 				this.deps.log.warn(`shared settings upload failed: ${e instanceof Error ? e.message : String(e)}`);

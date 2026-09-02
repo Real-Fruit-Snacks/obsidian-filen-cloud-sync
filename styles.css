@@ -140,8 +140,11 @@
 }
 
 .filen-cloud-sync-selftest-mark {
-	width: 1.2em;
+	min-width: 4.2em; /* text badges (PASS/FAIL/RUN/WAIT), not single glyphs */
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-smaller);
 	font-weight: var(--font-bold);
+	flex-shrink: 0;
 }
 
 .filen-cloud-sync-selftest-mark.filen-cloud-sync-selftest-ok {

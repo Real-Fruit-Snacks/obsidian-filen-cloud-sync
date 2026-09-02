@@ -50,7 +50,6 @@ import {
 	mimeFromName,
 	randomBytes,
 	randomString,
-	sleepMillis,
 	uuidv4,
 } from "../util";
 
@@ -117,7 +116,13 @@ function reportChunkProgress(
 export class FilenClient {
 	private credentials: StoredCredentials | null = null;
 
-	constructor(private readonly http: HttpFn) {}
+	constructor(
+		private readonly http: HttpFn,
+		// Timer injection: window timers on Obsidian; tests never hit retries,
+		// so the default is never exercised under Node.
+		private readonly sleep: (ms: number) => Promise<void> =
+			ms => new Promise(resolve => window.setTimeout(resolve, ms)),
+	) {}
 
 	setCredentials(credentials: StoredCredentials): void {
 		this.credentials = credentials;
@@ -342,7 +347,7 @@ export class FilenClient {
 				const resp = await this.http(req);
 				if (resp.status >= 500 && attempt < MAX_ATTEMPTS - 1) {
 					debugLog("http", `${req.method ?? "?"} ${safeUrl(req.url)} → HTTP ${resp.status}, retrying (attempt ${attempt + 1}/${MAX_ATTEMPTS})`);
-					await sleepMillis(RETRY_DELAYS_MS[attempt] ?? 8000);
+					await this.sleep(RETRY_DELAYS_MS[attempt] ?? 8000);
 					continue;
 				}
 				return resp;
@@ -350,7 +355,7 @@ export class FilenClient {
 				lastError = e;
 				if (attempt < MAX_ATTEMPTS - 1) {
 					debugLog("http", `${req.method ?? "?"} ${safeUrl(req.url)} network error, retrying (attempt ${attempt + 1}/${MAX_ATTEMPTS}): ${e instanceof Error ? e.message : String(e)}`);
-					await sleepMillis(RETRY_DELAYS_MS[attempt] ?? 8000);
+					await this.sleep(RETRY_DELAYS_MS[attempt] ?? 8000);
 				}
 			}
 		}

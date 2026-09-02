@@ -144,6 +144,8 @@ function makeHarness(options?: { credentials?: StoredCredentials | null; debounc
 		log,
 		notify: message => notices.push(message),
 		debounceMs: options?.debounceMs ?? 10,
+		setTimer: (cb, ms) => setTimeout(cb, ms) as unknown as number,
+		clearTimer: id => clearTimeout(id),
 	});
 	return {
 		sync, settings, notices, logs, mock,
@@ -400,6 +402,8 @@ describe("loop prevention", () => {
 			log,
 			notify: () => undefined,
 			debounceMs: 10,
+			setTimer: (cb, ms) => setTimeout(cb, ms) as unknown as number,
+			clearTimer: id => clearTimeout(id),
 		});
 
 		const applyPromise = sync.afterRun(await remoteTreeOf(mock));

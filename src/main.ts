@@ -87,6 +87,8 @@ export default class FilenSyncPlugin extends Plugin {
 			deviceId: () => loadDeviceId(this.app),
 			log: this.syncLog,
 			notify: message => this.friendlyNotice(message),
+			setTimer: (cb, ms) => window.setTimeout(cb, ms),
+			clearTimer: id => window.clearTimeout(id),
 		});
 
 		this.debouncedSyncOnSave = debounce(() => {

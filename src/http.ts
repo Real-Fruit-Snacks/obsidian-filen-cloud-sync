@@ -23,7 +23,10 @@ export const obsidianHttp: HttpFn = async request => {
 		// ACCESS — reading it eagerly here would throw a SyntaxError on every
 		// binary (encrypted chunk) download. Only parse when a caller asks.
 		get json(): unknown {
-			return resp.json as unknown;
+			// resp.json is typed `any`; the declared intermediate satisfies
+			// no-unsafe-return without an (unnecessary-assertion) cast.
+			const body: unknown = resp.json;
+			return body;
 		},
 		get text() {
 			return resp.text;
