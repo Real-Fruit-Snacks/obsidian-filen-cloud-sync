@@ -193,7 +193,7 @@ export class FilenSyncDashboardView extends ItemView {
 			opt.textContent = label;
 		}
 		select.value = this.deps.getSyncDirection();
-		const runBtn = runRow.createEl("button", { cls: "filen-cloud-sync-dashboard-button filen-cloud-sync-cta" });
+		const runBtn = runRow.createEl("button", { cls: "filen-cloud-sync-dashboard-button mod-cta" });
 		runBtn.setText("Sync now");
 		runBtn.addEventListener("click", () => {
 			const choice = select.value as SyncDirection;

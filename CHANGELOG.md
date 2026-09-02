@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.6] — 2026-09-03
+
+### Fixed
+- The dashboard "Sync now" button lost the theme accent color when the
+  one-time run row was introduced — it uses Obsidian's native mod-cta class
+  again.
+
 ## [0.7.5] — 2026-09-03
 
 ### Fixed
