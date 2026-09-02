@@ -35,7 +35,7 @@ import { SyncProgressModal } from "./ui/progress";
 import { runSelfTest, SelfTestModal } from "./ui/selfTest";
 import { UnlockModal } from "./ui/unlock";
 import { VersionHistoryModal } from "./ui/versions";
-import { friendlyError, normalizeVaultPath, relativeTime, setDestructiveCompat } from "./util";
+import { friendlyError, normalizeVaultPath, relativeTime } from "./util";
 
 export default class FilenSyncPlugin extends Plugin {
 	settings!: FilenSyncSettings;
@@ -642,7 +642,7 @@ class SyncLogModal extends Modal {
 					new Notice("Log copied — paste it anywhere to share");
 				}))
 			.addButton(button => {
-				setDestructiveCompat(button);
+				button.setDestructive();
 				button.setButtonText("Clear log")
 					.onClick(() => {
 						this.log.clear();

@@ -7,7 +7,6 @@
 
 import { App, Modal, Setting } from "obsidian";
 import type { SyncProgress } from "../sync/engine";
-import { setDestructiveCompat } from "../util";
 import type { SyncLog } from "../sync/log";
 
 const LOG_TAIL_LINES = 6;
@@ -61,7 +60,7 @@ export class SyncProgressModal extends Modal {
 				.onClick(() => this.close())) // sync keeps running in the background
 			.addButton(button => {
 				this.cancelButton = button.buttonEl;
-				setDestructiveCompat(button);
+				button.setDestructive();
 				button.setButtonText("Cancel sync")
 					.onClick(() => {
 						this.cancelRequested = true;

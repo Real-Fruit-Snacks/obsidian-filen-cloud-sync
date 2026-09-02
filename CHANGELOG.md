@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2] — 2026-09-02
+
+### Fixed
+- Community-review follow-up: removed globalThis usage (window timers with a
+  Node-only fallback for tests); adopted setDestructive directly and raised
+  minAppVersion to 1.13.0 (no installs older than that exist).
+
 ## [0.6.1] — 2026-09-02
 
 ### Fixed

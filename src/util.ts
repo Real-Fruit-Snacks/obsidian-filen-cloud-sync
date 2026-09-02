@@ -4,9 +4,6 @@
  * planner.ts (and this file) can be unit-tested in plain Node with vitest.
  */
 
-// Type-only import: erased at compile time, so the Node-purity rule holds.
-import type { ButtonComponent } from "obsidian";
-
 export const textEncoder = new TextEncoder();
 export const textDecoder = new TextDecoder();
 
@@ -442,32 +439,20 @@ export async function mapPool<T, R>(
 /* ---------------- time fmt ---------------- */
 
 
-const windowRef: Window | null = typeof window !== "undefined" ? window : null;
-
 /**
- * Popout-window-compatible timers: window.setTimeout/clearTimeout on
- * Obsidian; globalThis timers under Node (vitest). Member-call form keeps
- * the obsidianmd prefer-window-timers rule satisfied without Node breaking.
+ * Popout-window-compatible timers: window timers on Obsidian; the bare
+ * fallback only runs under Node (vitest), where window does not exist.
+ * (Directory scans reject globalThis, so the environment check uses typeof.)
  */
 export function setTimeoutCompat(cb: () => void, ms: number): number {
-	const host = windowRef ?? (globalThis as typeof globalThis & Window);
-	return host.setTimeout(cb, ms);
+	if (typeof window !== "undefined") return window.setTimeout(cb, ms);
+	return setTimeout(cb, ms) as unknown as number; // node test environment only (returns Timeout there)
 }
 
 export function clearTimeoutCompat(id: number | null): void {
 	if (id === null) return;
-	const host = windowRef ?? (globalThis as typeof globalThis & Window);
-	host.clearTimeout(id);
-}
-
-/**
- * setWarning() is deprecated in favor of setDestructive() (Obsidian 1.13+).
- * Feature-detect so the whole supported range works.
- */
-export function setDestructiveCompat(button: ButtonComponent): ButtonComponent {
-	const modern = (button as unknown as { setDestructive?: () => ButtonComponent }).setDestructive;
-	if (typeof modern === "function") return modern.call(button);
-	return button.setWarning();
+	if (typeof window !== "undefined") window.clearTimeout(id);
+	else clearTimeout(id); // node test environment only
 }
 
 export function formatLogTime(millis: number): string {

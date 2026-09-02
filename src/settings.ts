@@ -18,7 +18,6 @@ import {
 	isPresetEnabled,
 	mergeAllowlist,
 	normalizeVaultPath,
-	setDestructiveCompat,
 	togglePreset,
 } from "./util";
 import type FilenSyncPlugin from "./main";
@@ -118,7 +117,7 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 				.setDesc(`Connected as ${credentials.email}`);
 			connected.descEl.addClass("filen-cloud-sync-connected");
 			connected.addButton(button => {
-				setDestructiveCompat(button);
+				button.setDestructive();
 				button.setButtonText("Disconnect")
 					.onClick(async () => {
 					this.plugin.setMemoryCredentials(null);
