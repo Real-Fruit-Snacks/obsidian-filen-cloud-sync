@@ -1156,3 +1156,69 @@ describe("empty-source hard guard (v0.7.0, data-loss prevention)", () => {
 		expect(plan.seedMode).toBe("download-all");
 	});
 });
+
+describe("counts byte totals (v0.8.1 feature 4)", () => {
+	it("mixed op set: uploadsBytes/downloadsBytes sum per direction", () => {
+		const plan = planSync(
+			localTree(
+				lf("new-local.md", T0, 2048),          // upload 2 KiB
+				lf("changed.md", T0 + 5000, 512),      // upload 512 B
+				lf("stale.md", T0, 100),               // download (remote changed)
+			),
+			remoteTree(
+				rf("changed.md", "u1", T0, 100),
+				rf("stale.md", "u2", T0, 3072),        // download 3 KiB
+				rf("new-remote.md", "u3", T0, 256),    // download 256 B
+			),
+			new Map([
+				["changed.md", base(T0, 100, "u1")],
+				["stale.md", base(T0, 100, "u1")],     // remote uuid differs → remote changed
+			]),
+			opts(),
+		);
+		expect(plan.counts.uploads).toBe(2);
+		expect(plan.counts.uploadsBytes).toBe(2048 + 512);
+		expect(plan.counts.downloads).toBe(2);
+		expect(plan.counts.downloadsBytes).toBe(3072 + 256);
+	});
+
+	it("keep_both conflict copies count toward their direction", () => {
+		// Both sides changed: local newer → upload of the original path
+		// (local size) + download of the conflict copy (remote size).
+		const plan = planSync(
+			localTree(lf("conflict.md", T0 + 5000, 1000)),
+			remoteTree(rf("conflict.md", "u2", T0 + 3000, 4000)),
+			new Map([["conflict.md", base(T0, 100, "u1")]]),
+			opts({ conflictPolicy: "keep_both" }),
+		);
+		expect(plan.counts.conflicts).toBe(1);
+		expect(plan.counts.uploads).toBe(1);
+		expect(plan.counts.uploadsBytes).toBe(1000);
+		expect(plan.counts.downloads).toBe(1);
+		expect(plan.counts.downloadsBytes).toBe(4000);
+	});
+
+	it("remote-wins keep_both conflict: conflict-copy upload uses the ORIGINAL path's size", () => {
+		// Remote newer → local file is renamed to the conflict copy and
+		// uploaded under the copy name; the byte total still finds the size.
+		const plan = planSync(
+			localTree(lf("conflict.md", T0 + 3000, 700)),
+			remoteTree(rf("conflict.md", "u2", T0 + 5000, 900)),
+			new Map([["conflict.md", base(T0, 100, "u1")]]),
+			opts({ conflictPolicy: "keep_both" }),
+		);
+		expect(plan.counts.uploads).toBe(1);
+		expect(plan.counts.uploadsBytes).toBe(700);
+		expect(plan.counts.downloads).toBe(1);
+		expect(plan.counts.downloadsBytes).toBe(900);
+	});
+
+	it("no transfer ops → zero byte totals", () => {
+		const plan = planSync(
+			localTree(lf("a.md")), remoteTree(rf("a.md", "u1")),
+			new Map([["a.md", base(T0, 100, "u1")]]), opts(),
+		);
+		expect(plan.counts.uploadsBytes).toBe(0);
+		expect(plan.counts.downloadsBytes).toBe(0);
+	});
+});

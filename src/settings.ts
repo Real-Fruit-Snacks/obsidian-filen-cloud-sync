@@ -693,6 +693,25 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 					setDebugLogging(value);
 					await this.plugin.saveSettings();
 				}));
+
+		// v0.8.1: About block — version read from the manifest at RUNTIME
+		// (never hardcoded), links to the repo + issue tracker.
+		const about = containerEl.createDiv({ cls: "filen-cloud-sync-about" });
+		about.appendText(`Filen Cloud Sync ${this.plugin.manifest.version} · by `);
+		about.createEl("a", {
+			text: "Real-Fruit-Snacks",
+			href: "https://github.com/Real-Fruit-Snacks",
+		});
+		about.appendText(" · ");
+		about.createEl("a", {
+			text: "GitHub",
+			href: "https://github.com/Real-Fruit-Snacks/obsidian-filen-cloud-sync",
+		});
+		about.appendText(" · ");
+		about.createEl("a", {
+			text: "Report an issue",
+			href: "https://github.com/Real-Fruit-Snacks/obsidian-filen-cloud-sync/issues",
+		});
 	}
 
 	/** Add an ignored folder: normalize (NFC, trim slashes), reject junk. */

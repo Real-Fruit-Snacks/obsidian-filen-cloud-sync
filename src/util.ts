@@ -765,17 +765,132 @@ export function backgroundChangeNotice(opts: {
 /**
  * v0.8.0 feature 4: status-bar text per state. Idle carries the relative
  * last-sync timestamp ("Filen: idle · 3 min ago" — relativeTime phrasing);
- * paused/running/error are unchanged.
+ * paused/running/error are unchanged. v0.8.1: offline slots in below paused
+ * (a paused vault shows "paused" even with no network) and above idle/error.
  */
 export function statusBarText(
 	state: "idle" | "running" | "error",
-	opts: { paused: boolean; lastSyncFinishedAt: number | null; now?: number },
+	opts: { paused: boolean; offline?: boolean; lastSyncFinishedAt: number | null; now?: number },
 ): string {
 	if (opts.paused && state !== "running") return "Filen: paused";
 	if (state === "running") return "Filen: syncing…";
+	if (opts.offline) return "Filen: offline";
 	if (state === "error") return "Filen: error";
 	if (opts.lastSyncFinishedAt === null) return "Filen: idle";
 	return `Filen: idle · ${relativeTime(opts.lastSyncFinishedAt, opts.now)}`;
+}
+
+/* -------------------------------------------------------------------------
+ * Offline awareness + notice throttle (v0.8.1). Pure + DI-clock so the state
+ * machines are unit-testable in plain Node.
+ * ------------------------------------------------------------------------- */
+
+/**
+ * Network-class error detection — the SAME patterns friendlyError maps to
+ * "Can't reach Filen" (kept in sync deliberately). Used by OfflineTracker to
+ * count consecutive network-failed runs.
+ */
+export function isNetworkError(raw: string): boolean {
+	const msg = raw.toLowerCase();
+	return msg.includes("failed to fetch") || msg.includes("network") || msg.includes("timeout")
+		|| msg.includes("timed out") || msg.includes("econn") || msg.includes("socket") || msg.includes("dns");
+}
+
+/** v0.8.1: consecutive network-failed runs before the plugin goes "offline". */
+export const OFFLINE_AFTER_NETWORK_FAILURES = 2;
+
+/**
+ * Offline state machine (in-memory, one per plugin). Enter offline when the
+ * browser reports no network at run start OR after
+ * OFFLINE_AFTER_NETWORK_FAILURES consecutive runs fail with network-class
+ * errors; exit on any run that reached the gateway successfully (a run that
+ * scanned/planned — even an aborted or dry one — proves connectivity).
+ * "skipped"/"paused" results never touched the network: they change nothing.
+ */
+export class OfflineTracker {
+	private networkFailStreak = 0;
+	private offline = false;
+
+	isOffline(): boolean {
+		return this.offline;
+	}
+
+	/** navigator.onLine === false at run start. */
+	noteNavigatorOffline(): void {
+		this.offline = true;
+	}
+
+	/** Any successful gateway request → back online. */
+	noteRequestSuccess(): void {
+		this.offline = false;
+		this.networkFailStreak = 0;
+	}
+
+	/** Feed a finished run's status + message (see class doc for the rules). */
+	noteRunFinished(result: { status: string; message: string }): void {
+		if (result.status === "error") {
+			if (isNetworkError(result.message)) {
+				this.networkFailStreak++;
+				if (this.networkFailStreak >= OFFLINE_AFTER_NETWORK_FAILURES) this.offline = true;
+			} else {
+				// A non-network error breaks the CONSECUTIVE streak.
+				this.networkFailStreak = 0;
+			}
+			return;
+		}
+		if (result.status === "skipped" || result.status === "paused") return;
+		this.noteRequestSuccess();
+	}
+}
+
+/** v0.8.1: identical background notices repeat at most once per 15 minutes. */
+export const NOTICE_THROTTLE_WINDOW_MS = 15 * 60 * 1000;
+
+/**
+ * Per-message notice throttle: the same text is shown at most once per
+ * window (default 15 min). Manual-run results bypass this at the call site
+ * (they're user-invoked); the throttle exists for repeated AUTO/background
+ * messages. The sync log and dashboard are unaffected — they keep every line.
+ */
+export class NoticeThrottle {
+	private readonly lastShownAt = new Map<string, number>();
+
+	constructor(
+		private readonly now: () => number = Date.now,
+		private readonly windowMs: number = NOTICE_THROTTLE_WINDOW_MS,
+	) {}
+
+	/** true → show the notice (and record it); false → still within the window. */
+	shouldShow(message: string): boolean {
+		const now = this.now();
+		const last = this.lastShownAt.get(message);
+		if (last !== undefined && now - last < this.windowMs) return false;
+		this.lastShownAt.set(message, now);
+		return true;
+	}
+}
+
+/**
+ * v0.8.1: dashboard "Last run" second line. Null hides the line (not
+ * connected, paused, or interval sync off); no run yet this session →
+ * "on the next interval". Computed at render/refresh only — no timers.
+ */
+export function nextAutoSyncText(opts: {
+	connected: boolean;
+	paused: boolean;
+	autoSyncInterval: boolean;
+	syncIntervalMinutes: number;
+	lastSyncFinishedAt: number | null;
+	now?: number;
+}): string | null {
+	if (!opts.connected || opts.paused || !opts.autoSyncInterval || opts.syncIntervalMinutes < 1) {
+		return null;
+	}
+	if (opts.lastSyncFinishedAt === null) return "Next auto sync on the next interval";
+	const elapsedMs = (opts.now ?? Date.now()) - opts.lastSyncFinishedAt;
+	const remainingMs = opts.syncIntervalMinutes * 60_000 - elapsedMs;
+	const minutes = Math.max(1, Math.ceil(remainingMs / 60_000));
+	return `Next auto sync in ~${minutes} min`;
 }
 
 export interface FriendlyError {

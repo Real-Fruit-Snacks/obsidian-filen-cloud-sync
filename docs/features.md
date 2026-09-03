@@ -27,7 +27,11 @@ this document covers every option, caveat and edge case.
 - [Force sync current file](#force-sync-current-file)
 - [Background-change notice](#background-change-notice)
 - [Status bar last-sync timestamp](#status-bar-last-sync-timestamp)
+- [Offline awareness](#offline-awareness)
+- [Error notice throttling](#error-notice-throttling)
 - [Sync dashboard](#sync-dashboard)
+- [Log viewer](#log-viewer)
+- [About block](#about-block)
 - [Troubleshooting with the debug log](#troubleshooting)
 - [Known limitations](#known-limitations)
 - [Non-goals](#non-goals)
@@ -128,7 +132,9 @@ replaced content stays on Filen as a version, too).
 **Settings → Filen Cloud Sync → Memory-only credentials**: keys are kept
 only in memory and never written to disk. Each Obsidian start begins
 **locked** (lock ribbon icon); run **Unlock sync** and enter your password
-(+2FA) to unlock for the session. Enabling the toggle wipes any previously
+(+2FA) to unlock for the session — the password field is focused
+automatically and Enter submits from either field (v0.8.1). Enabling the
+toggle wipes any previously
 stored keys; disabling it offers to persist the unlocked keys or discard
 them. In this mode the remote-tree cache (which contains per-file content
 keys) is also kept off disk — it lives only for the session, so the first
@@ -224,7 +230,10 @@ downloads or deletes, no changes to the local sync state, and no progress
 modal. The modal shows a counts line (uploads / downloads / deletes /
 folders / renames / conflicts) and a grouped, scrollable list of every
 planned operation in plain language, plus a first-sync (seed mode) note when
-applicable.
+applicable. Since v0.8.1 the uploads and downloads counts carry their
+per-direction byte totals — "3 uploads (2.4 MB) · 1 download (310 KB) · 0
+deletes · …" — so you can gauge the transfer size before committing.
+Conflict copies count toward their own direction.
 
 If the mass-change guard *would* stop a real run, the preview says so with
 a warning instead of aborting, so you can review the full plan first.
@@ -351,6 +360,32 @@ minutes ago" — refreshed every minute. The paused, syncing and error states
 are unchanged, and there is no extra timer work on mobile (the status bar is
 hidden there anyway).
 
+## Offline awareness
+
+When the network drops, the plugin notices in two ways: the browser reports
+`navigator.onLine === false` at the start of a run, or two consecutive runs
+fail with network-class errors (connection refused, timeout, DNS, …). While
+offline:
+
+- **Automatic triggers skip silently** — interval, sync-on-save and startup
+  syncs don't even start a run, so the sync log stays clean.
+- **Manual runs show one notice** — "You're offline — sync resumes when
+  you're back" — and still try: a successful run is the way back online.
+- The **status bar** shows "Filen: offline" and the **dashboard** Connection
+  section shows an Offline state.
+
+Any run that reaches the Filen gateway (even one that is then aborted by the
+mass-change guard) flips the plugin back to online and normal behavior
+resumes — nothing to acknowledge or reset.
+
+## Error notice throttling
+
+Identical automatic/background error notices are shown at most **once per
+15 minutes** — a vault that fails every interval no longer produces a notice
+storm. The sync log and dashboard are unaffected (they keep every entry),
+and **manual-run results always notify**: anything you explicitly triggered
+is never throttled.
+
 ## Sync dashboard
 
 Run **Open sync dashboard** (or click the ribbon icon — it toggles the
@@ -364,6 +399,42 @@ unavailable" on failure). Buttons: **Sync now**, **Preview sync plan**,
 conflict copies** in the Conflicts section. The view refreshes
 on open, after each completed run and on settings save — no background
 timers.
+
+Two v0.8.1 additions:
+
+- **Guided empty state** — with no account connected, the dashboard replaces
+  the (all-empty) sections with a "Get started" checklist: **1. Connect your
+  Filen account** (opens settings), **2. Run self-test** and **3. Sync now**
+  (both disabled until connected).
+- **Next auto sync line** — when connected, interval syncing on and not
+  paused, a muted "Next auto sync in ~N min" line appears under the last
+  run ("on the next interval" before the first run of the session). It is
+  computed when the view renders/refreshes — still no timers in the view.
+
+## Log viewer
+
+**Show sync log** (command, dashboard button, or the progress modal) opens
+a real log viewer instead of a plain text dump:
+
+- **Toolbar** — a case-insensitive substring search over the message text, a
+  level dropdown (**All levels** / **Warnings + conflicts** / **Errors
+  only**), **Copy log** (copies exactly the filtered view, as plain text)
+  and **Clear log**.
+- **Rows** — a colored level chip (INFO / WARN / CONF / ERR — conflicts use
+  the warning color), a muted monospaced timestamp and the message in normal
+  text so paths stay readable. Newest entries are on top.
+- An empty filter result shows "No matching log entries."
+
+The underlying `SyncLog.render()` pipeline still produces the raw full log
+as plain text (used for the filtered copy and debugging) — the viewer is
+presentation-only.
+
+## About block
+
+The bottom of the settings tab shows a subtle "Filen Cloud Sync
+*<version>* · by Real-Fruit-Snacks · GitHub · Report an issue" line. The
+version is read from the plugin manifest at runtime (never hardcoded), and
+the links go to the repository and its issue tracker.
 
 ## Troubleshooting
 

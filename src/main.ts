@@ -4,15 +4,12 @@
  */
 
 import {
-	App,
 	debounce,
 	Debouncer,
-	Modal,
 	Notice,
 	Platform,
 	Plugin,
 	setIcon,
-	Setting,
 	TAbstractFile,
 	TFile,
 	TFolder,
@@ -34,11 +31,21 @@ import { ConflictReviewModal } from "./ui/conflictReview";
 import { DashboardDeps, FilenSyncDashboardView, VIEW_TYPE_FILEN_DASHBOARD } from "./ui/dashboard";
 import { DryRunModal } from "./ui/dryRun";
 import { ExplorerDecorations } from "./ui/explorerDecorations";
+import { SyncLogModal } from "./ui/logView";
 import { SyncProgressModal } from "./ui/progress";
 import { runSelfTest, SelfTestModal } from "./ui/selfTest";
 import { UnlockModal } from "./ui/unlock";
 import { VersionHistoryModal } from "./ui/versions";
-import { backgroundChangeNotice, friendlyError, normalizeVaultPath, relativeTime, statusBarText } from "./util";
+import {
+	backgroundChangeNotice,
+	friendlyError,
+	isNetworkError,
+	nextAutoSyncText,
+	normalizeVaultPath,
+	NoticeThrottle,
+	OfflineTracker,
+	statusBarText,
+} from "./util";
 
 export default class FilenSyncPlugin extends Plugin {
 	settings!: FilenSyncSettings;
@@ -58,6 +65,10 @@ export default class FilenSyncPlugin extends Plugin {
 	private lockedNoticeShown = false;
 	/** v0.6.0 feature D: file-explorer "changed since last sync" dots. */
 	private explorerDecorations!: ExplorerDecorations;
+	/** v0.8.1 feature 2: offline state machine (in-memory). */
+	private readonly offlineTracker = new OfflineTracker();
+	/** v0.8.1 feature 3: identical background notices at most once per 15 min. */
+	private readonly noticeThrottle = new NoticeThrottle();
 
 	async onload(): Promise<void> {
 		this.settings = Object.assign(
@@ -446,6 +457,17 @@ export default class FilenSyncPlugin extends Plugin {
 			},
 			getSyncPaused: () => this.settings.syncPaused,
 			getSyncDirection: () => this.settings.syncDirection,
+			// v0.8.1 feature 2: offline state in the Connection section.
+			getOffline: () => this.offlineTracker.isOffline(),
+			// v0.8.1 feature 8: composed here (render/refresh only — no timers
+			// in the view); hidden when paused/off/disconnected.
+			getNextAutoSync: () => nextAutoSyncText({
+				connected: this.hasCredentials(),
+				paused: this.settings.syncPaused,
+				autoSyncInterval: this.settings.autoSyncInterval,
+				syncIntervalMinutes: this.settings.syncIntervalMinutes,
+				lastSyncFinishedAt: this.lastSyncFinishedAt,
+			}),
 			onSyncNow: () => void this.runSync({ manual: true }),
 			// v0.7.1 feature A: one-time direction overrides (no setting mutation).
 			onPushNow: () => void this.runSync({ manual: true, direction: "push" }),
@@ -587,11 +609,20 @@ export default class FilenSyncPlugin extends Plugin {
 	/**
 	 * User-facing notices get plain-language titles + a next step (v0.5.2);
 	 * the raw detailed message stays in the sync log for debugging.
+	 * v0.8.1 feature 3: identical AUTO/background messages are throttled to
+	 * one Notice per 15 minutes; manual-run results (opts.manual) always
+	 * notify — they're user-invoked.
 	 */
-	private friendlyNotice(rawMessage: string, prefix?: string): void {
+	private friendlyNotice(rawMessage: string, prefix?: string, opts?: { manual?: boolean }): void {
+		// v0.8.1 feature 2: while offline, a manual run's network-class failure
+		// is covered by the ONE "you're offline" notice already shown — don't
+		// stack a second notice on top of it.
+		if (opts?.manual && this.offlineTracker.isOffline() && isNetworkError(rawMessage)) return;
 		const friendly = friendlyError(rawMessage);
 		const lead = prefix ? `${prefix}: ` : "Filen Cloud Sync: ";
-		new Notice(friendly.hint ? `${lead}${friendly.title} — ${friendly.hint}` : `${lead}${friendly.title}`);
+		const text = friendly.hint ? `${lead}${friendly.title} — ${friendly.hint}` : `${lead}${friendly.title}`;
+		if (!opts?.manual && !this.noticeThrottle.shouldShow(text)) return;
+		new Notice(text);
 	}
 
 	private async runSync(options: {
@@ -619,6 +650,19 @@ export default class FilenSyncPlugin extends Plugin {
 			}
 			return;
 		}
+		// v0.8.1 feature 2: offline awareness. navigator.onLine === false at
+		// run start marks offline immediately (2 consecutive network-failed
+		// runs also get here — see OfflineTracker). While offline: AUTO
+		// triggers (interval/save/startup) skip SILENTLY — no engine run, so
+		// no error-log spam; MANUAL runs show ONE notice and still proceed,
+		// because a successful run is the way back online.
+		if (typeof navigator !== "undefined" && navigator.onLine === false) {
+			this.offlineTracker.noteNavigatorOffline();
+		}
+		if (this.offlineTracker.isOffline() && !options.manual) return;
+		if (this.offlineTracker.isOffline()) {
+			new Notice("Filen Cloud Sync: you're offline — sync resumes when you're back");
+		}
 		if (options.manual && this.engine.isRunning) {
 			// Join the single-flight queue without opening a second (dead) modal.
 			new Notice("Filen Cloud Sync already running — queued");
@@ -632,6 +676,7 @@ export default class FilenSyncPlugin extends Plugin {
 			this.updateStatusBar("running");
 			try {
 				const result = await this.engine.run(options);
+				this.offlineTracker.noteRunFinished(result);
 				this.updateStatusBar(result.status === "error" ? "error" : "idle");
 				if (result.status === "dry-run" && result.plan) {
 					new DryRunModal(
@@ -641,11 +686,12 @@ export default class FilenSyncPlugin extends Plugin {
 						() => void this.runSync({ manual: true }),
 					).open();
 				} else if (result.status === "error") {
-					this.friendlyNotice(result.message, "Filen Cloud Sync failed");
+					this.friendlyNotice(result.message, "Filen Cloud Sync failed", { manual: true });
 				}
 			} catch (e) {
 				const message = e instanceof Error ? e.message : String(e);
 				this.syncLog.error(`dry run crashed: ${message}`);
+				this.offlineTracker.noteRunFinished({ status: "error", message });
 				new Notice(`Filen Cloud Sync failed: ${message}`);
 				this.updateStatusBar("error");
 			}
@@ -669,6 +715,9 @@ export default class FilenSyncPlugin extends Plugin {
 			});
 			this.lastSyncResult = result;
 			this.lastSyncFinishedAt = Date.now();
+			// v0.8.1 feature 2: feed the offline state machine (a run that
+			// reached the gateway clears offline; network errors count up).
+			this.offlineTracker.noteRunFinished(result);
 			if (modal) {
 				const clean = (result.status === "ok" || result.status === "empty")
 					&& (result.opFailures ?? 0) === 0
@@ -677,8 +726,8 @@ export default class FilenSyncPlugin extends Plugin {
 					result.message, clean,
 					result.plan?.conflicts.map(conflict => conflict.path) ?? [],
 				);
-				if (result.status === "error") this.friendlyNotice(result.message, "Filen Cloud Sync failed");
-				else if (result.status === "aborted") this.friendlyNotice(result.message, "Filen Cloud Sync aborted");
+				if (result.status === "error") this.friendlyNotice(result.message, "Filen Cloud Sync failed", { manual: true });
+				else if (result.status === "aborted") this.friendlyNotice(result.message, "Filen Cloud Sync aborted", { manual: true });
 			} else if (result.status === "error") {
 				// Auto runs: surface a Notice only on the ok→error transition
 				// (rate-limited, not every failing run); status bar always updates.
@@ -714,6 +763,7 @@ export default class FilenSyncPlugin extends Plugin {
 		} catch (e) {
 			const message = e instanceof Error ? e.message : String(e);
 			this.syncLog.error(`sync crashed: ${message}`);
+			this.offlineTracker.noteRunFinished({ status: "error", message });
 			modal?.finish(`failed: ${message}`, false);
 			if (options.manual || previousStatus !== "error") new Notice(`Filen Cloud Sync failed: ${message}`);
 			this.lastSyncResult = { status: "error", message };
@@ -727,97 +777,36 @@ export default class FilenSyncPlugin extends Plugin {
 		this.statusBarState = state;
 		if (!this.statusBarItem) return;
 		this.statusBarItem.removeClass("filen-cloud-sync-error");
+		// v0.8.1 feature 2: offline shows below paused, above idle/error.
+		const offline = this.offlineTracker.isOffline();
 		// v0.7.1 feature B: the paused state wins over idle/error (a run can't
 		// be in flight while paused — every trigger path is blocked).
 		if (this.settings.syncPaused && state !== "running") {
 			this.statusBarItem.setText(statusBarText(state, {
-				paused: true, lastSyncFinishedAt: this.lastSyncFinishedAt,
+				paused: true, offline, lastSyncFinishedAt: this.lastSyncFinishedAt,
 			}));
 			this.statusBarItem.setAttribute("aria-label", `Filen Cloud Sync: ${SYNC_PAUSED_MESSAGE}`);
 			return;
 		}
 		if (state === "running") {
 			this.statusBarItem.setText(statusBarText(state, {
-				paused: false, lastSyncFinishedAt: this.lastSyncFinishedAt,
+				paused: false, offline, lastSyncFinishedAt: this.lastSyncFinishedAt,
 			}));
 		} else if (state === "error") {
 			this.statusBarItem.addClass("filen-cloud-sync-error");
 			const detail = this.lastSyncResult ? ` — ${this.lastSyncResult.message}` : "";
 			this.statusBarItem.setText(statusBarText(state, {
-				paused: false, lastSyncFinishedAt: this.lastSyncFinishedAt,
+				paused: false, offline, lastSyncFinishedAt: this.lastSyncFinishedAt,
 			}));
 			this.statusBarItem.setAttribute("aria-label", `Filen Cloud Sync error${detail}`);
 		} else {
 			// v0.8.0 feature 4: idle shows the relative last-sync timestamp.
 			this.statusBarItem.setText(statusBarText(state, {
-				paused: false, lastSyncFinishedAt: this.lastSyncFinishedAt,
+				paused: false, offline, lastSyncFinishedAt: this.lastSyncFinishedAt,
 			}));
 			if (this.lastSyncResult) {
 				this.statusBarItem.setAttribute("aria-label", `Filen Cloud Sync: ${this.lastSyncResult.message}`);
 			}
 		}
-	}
-}
-
-class SyncLogModal extends Modal {
-	constructor(
-		app: App,
-		private readonly log: SyncLog,
-		private readonly getLastRun: () => { finishedAt: number; status: string; message: string } | null,
-	) {
-		super(app);
-	}
-
-	onOpen(): void {
-		this.setTitle("Filen Cloud Sync log");
-		this.render();
-	}
-
-	private render(): void {
-		this.contentEl.empty();
-
-		// Header: last-run summary + actions.
-		const lastRun = this.getLastRun();
-		if (lastRun) {
-			const summary = this.contentEl.createDiv({ cls: "filen-cloud-sync-log-summary" });
-			summary.setText(`Last sync: ${relativeTime(lastRun.finishedAt)} — ${lastRun.message}`);
-		}
-		new Setting(this.contentEl)
-			.addButton(button => button
-				.setButtonText("Copy log")
-				.onClick(() => {
-					void navigator.clipboard.writeText(this.log.render());
-					new Notice("Log copied — paste it anywhere to share");
-				}))
-			.addButton(button => {
-				button.setDestructive();
-				button.setButtonText("Clear log")
-					.onClick(() => {
-						this.log.clear();
-						this.render();
-					});
-			})
-			.addButton(button => button
-				.setButtonText("Close")
-				.onClick(() => this.close()));
-
-		const view = this.contentEl.createDiv({ cls: "filen-cloud-sync-log-view" });
-		const entries = this.log.getEntries();
-		if (entries.length === 0) {
-			view.setText("Nothing logged yet — run a sync and entries will appear here.");
-			return;
-		}
-		for (const entry of entries.slice().reverse()) {
-			const line = view.createDiv({ cls: "filen-cloud-sync-log-entry" });
-			if (entry.level === "error") line.addClass("filen-cloud-sync-log-error");
-			if (entry.level === "warn" || entry.level === "conflict") line.addClass("filen-cloud-sync-log-warn");
-			line.setText(
-				`${new Date(entry.ts).toLocaleString()}  ${entry.level.toUpperCase()}  ${entry.message}`,
-			);
-		}
-	}
-
-	onClose(): void {
-		this.contentEl.empty();
 	}
 }

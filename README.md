@@ -45,6 +45,19 @@ is never stored. Works on **desktop and mobile**.
   automatic sync uploaded, downloaded or deleted files.
 - **Status bar timestamp** — the idle status bar shows when the last sync
   finished ("Filen: idle · 3 minutes ago"), refreshed every minute.
+- **Offline awareness** — when the network drops, automatic syncs pause
+  silently and the status bar and dashboard show "offline"; manual runs get
+  a single notice, and everything resumes by itself when you're back.
+  Repeated identical error notices are throttled to one per 15 minutes.
+- **Guided first run** — before you connect, the dashboard shows a 3-step
+  checklist (connect → self-test → sync now) instead of empty panels, and a
+  "Next auto sync in ~N min" line under the last run once interval syncing
+  is on.
+- **Log viewer** — the sync log is a real viewer: substring search, level
+  filters (all / warnings + conflicts / errors) and a copy button that
+  copies the filtered view.
+- **Dry-run sizes** — the plan preview counts line includes per-direction
+  byte totals ("3 uploads (2.4 MB), 1 download (310 KB)").
 - **Version history** — browse and restore Filen file versions from the
   command palette or the right-click menu.
 - **Selective sync** — ignore folders with a right-click; opt-in sync of

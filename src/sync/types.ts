@@ -155,6 +155,13 @@ export interface SyncPlan {
 		renames: number;
 		prunes: number;
 		conflicts: number;
+		/**
+		 * v0.8.1: total bytes per transfer direction (sum of LocalFile.size /
+		 * RemoteFile.size for those ops; conflict copies count toward their
+		 * direction). Powers the dry-run "3 uploads (2.4 MB)" counts line.
+		 */
+		uploadsBytes: number;
+		downloadsBytes: number;
 	};
 }
 
@@ -212,6 +219,7 @@ export function emptyPlan(): SyncPlan {
 		counts: {
 			uploads: 0, downloads: 0, trashLocal: 0, trashRemote: 0,
 			mkdirLocal: 0, mkdirRemote: 0, renames: 0, prunes: 0, conflicts: 0,
+			uploadsBytes: 0, downloadsBytes: 0,
 		},
 	};
 }

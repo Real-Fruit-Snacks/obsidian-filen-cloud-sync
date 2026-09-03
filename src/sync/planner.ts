@@ -664,8 +664,23 @@ export function planSync(
 
 	for (const op of plan.ops) {
 		switch (op.kind) {
-			case "upload": plan.counts.uploads++; break;
-			case "download": plan.counts.downloads++; break;
+			case "upload": {
+				plan.counts.uploads++;
+				// v0.8.1: byte totals per direction. Conflict-copy uploads
+				// (path = the renamed copy) find their size via the ORIGINAL
+				// path — the rename happens during execution, the scanned
+				// local tree still keys the original.
+				const localFile = local.files.get(op.path)
+					?? (op.conflict ? local.files.get(op.conflict.path) : undefined);
+				if (localFile) plan.counts.uploadsBytes += localFile.size;
+				break;
+			}
+			case "download": {
+				plan.counts.downloads++;
+				const remoteFile = op.remote ?? remote.files.get(op.path);
+				if (remoteFile) plan.counts.downloadsBytes += remoteFile.size;
+				break;
+			}
 			case "trashLocal": plan.counts.trashLocal++; break;
 			case "trashRemote": plan.counts.trashRemote++; break;
 			case "mkdirLocal": plan.counts.mkdirLocal++; break;

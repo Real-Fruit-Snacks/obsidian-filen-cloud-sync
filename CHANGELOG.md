@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.8.1] — 2026-09-05
+
+### Added
+- **Dashboard guided empty state** — with no account connected, the
+  dashboard shows a "Get started" checklist instead of empty sections:
+  1. Connect your Filen account (opens settings), 2. Run self-test and
+  3. Sync now (both disabled until connected).
+- **Offline awareness** — the plugin goes offline when the browser reports
+  no network at run start or after two consecutive runs fail with
+  network-class errors. While offline, automatic triggers (interval,
+  sync-on-save, startup) skip silently, manual runs show a single "You're
+  offline — sync resumes when you're back" notice (and still try — a
+  successful run is the way back online), the status bar shows "Filen:
+  offline" and the dashboard Connection section shows an Offline state. Any
+  run that reaches the gateway flips back to online.
+- **Error notice throttling** — identical automatic/background notices are
+  shown at most once per 15 minutes (the sync log and dashboard keep every
+  entry). Manual-run results always notify.
+- **Dry-run sizes** — the plan preview counts line gains per-direction byte
+  totals via formatBytes: "3 uploads (2.4 MB) · 1 download (310 KB) · 0
+  deletes · …". SyncPlan.counts gains uploadsBytes/downloadsBytes; conflict
+  copies count toward their direction.
+- **Log viewer** — "Show sync log" is now a real viewer: a toolbar with
+  case-insensitive substring search, a level dropdown (All levels /
+  Warnings + conflicts / Errors only), Copy log (copies the FILTERED view)
+  and Clear log; rows show a colored level chip (INFO/WARN/CONF/ERR, CSS
+  vars only), a muted monospaced timestamp and the message. The filter is
+  the pure, unit-tested `filterLogEntries`; `SyncLog.render()` stays the raw
+  plain-text pipeline.
+- **Dashboard "Next auto sync" line** — a muted "Next auto sync in ~N min"
+  line under Last run (computed from syncIntervalMinutes +
+  lastSyncFinishedAt at render/refresh only — no timers in the view; "on the
+  next interval" before the first run; hidden when paused/off/disconnected).
+- **About block** — the bottom of the settings tab shows "Filen Cloud Sync
+  <version> · by Real-Fruit-Snacks · GitHub · Report an issue"; the version
+  is read from the manifest at runtime.
+
+### Changed
+- **Unlock modal ergonomics** — the password field is focused on open and
+  Enter submits from both the password and the 2FA field.
+
 ## [0.8.0] — 2026-09-04
 
 ### Added

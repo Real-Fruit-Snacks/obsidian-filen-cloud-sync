@@ -7,7 +7,7 @@
 
 import { App, Modal, Setting } from "obsidian";
 import type { ConflictPolicy, SyncOp, SyncOpKind, SyncPlan } from "../sync/types";
-import { pluralize } from "../util";
+import { formatBytes, pluralize } from "../util";
 
 /** Internal base-maintenance ops never surface in the preview. */
 function isVisibleOp(op: SyncOp): boolean {
@@ -94,12 +94,19 @@ export class DryRunModal extends Modal {
 				.onClick(() => this.close()));
 	}
 
-	/** Counts line: uploads/downloads/deletes/folders/renames/conflicts. */
+	/**
+	 * Counts line: uploads/downloads (v0.8.1: with per-direction byte totals
+	 * via formatBytes)/deletes/folders/renames/conflicts.
+	 */
 	private renderCounts(contentEl: HTMLElement): void {
 		const c = this.plan.counts;
 		const parts = [
-			pluralize(c.uploads, "upload"),
-			pluralize(c.downloads, "download"),
+			c.uploads > 0
+				? `${pluralize(c.uploads, "upload")} (${formatBytes(c.uploadsBytes)})`
+				: pluralize(c.uploads, "upload"),
+			c.downloads > 0
+				? `${pluralize(c.downloads, "download")} (${formatBytes(c.downloadsBytes)})`
+				: pluralize(c.downloads, "download"),
 			pluralize(c.trashLocal + c.trashRemote + c.prunes, "delete"),
 			pluralize(c.mkdirLocal + c.mkdirRemote, "folder"),
 			pluralize(c.renames, "rename"),

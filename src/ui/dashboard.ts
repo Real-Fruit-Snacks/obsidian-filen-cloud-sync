@@ -38,6 +38,13 @@ export interface DashboardDeps {
 	getSyncPaused: () => boolean;
 	/** v0.7.1 feature A: the persisted default direction (for the note). */
 	getSyncDirection: () => SyncDirection;
+	/** v0.8.1 feature 2: offline state for the Connection section. */
+	getOffline: () => boolean;
+	/**
+	 * v0.8.1 feature 8: "Next auto sync in ~N min" line (null = hidden).
+	 * Composed by the plugin at render/refresh time — no timers in the view.
+	 */
+	getNextAutoSync: () => string | null;
 	onSyncNow: () => void;
 	/** v0.7.1 feature A: one-time direction overrides (never persisted). */
 	onPushNow: () => void;
@@ -120,13 +127,24 @@ export class FilenSyncDashboardView extends ItemView {
 
 		/* ---- Connection ---- */
 		const connection = this.deps.getConnection();
+
+		// v0.8.1 feature 1: never connected → guided empty state INSTEAD of
+		// the (all-empty) sections: a 3-step checklist with buttons.
+		if (connection.status === "disconnected") {
+			this.renderGetStarted(root, connection.remoteFolder);
+			return;
+		}
+
 		const connectionEl = this.section(root, "Connection");
 		if (connection.status === "connected") {
 			connectionEl.createDiv().setText(`Connected as ${connection.email}`);
 		} else if (connection.status === "locked") {
 			connectionEl.createDiv().setText(`Locked — unlock to sync (${connection.email})`);
-		} else {
-			connectionEl.createDiv().setText("Not connected — connect your account in settings");
+		}
+		// v0.8.1 feature 2: offline state in the Connection section.
+		if (this.deps.getOffline()) {
+			connectionEl.createDiv({ cls: "filen-cloud-sync-dashboard-offline" })
+				.setText("Offline — sync resumes when you're back");
 		}
 		connectionEl.createDiv({ cls: "filen-cloud-sync-dashboard-muted" })
 			.setText(`Remote folder: ${connection.remoteFolder}`);
@@ -142,6 +160,12 @@ export class FilenSyncDashboardView extends ItemView {
 			// Absolute timestamp on hover for precision.
 			line.setAttr("title", new Date(lastRun.finishedAt).toLocaleString());
 			runEl.createDiv({ cls: "filen-cloud-sync-dashboard-muted" }).setText(lastRun.message);
+		}
+		// v0.8.1 feature 8: muted "Next auto sync in ~N min" line (hidden when
+		// paused/off/disconnected — the composer returns null then).
+		const nextAutoSync = this.deps.getNextAutoSync();
+		if (nextAutoSync) {
+			runEl.createDiv({ cls: "filen-cloud-sync-dashboard-muted" }).setText(nextAutoSync);
 		}
 
 		/* ---- Conflicts ---- */
@@ -218,6 +242,49 @@ export class FilenSyncDashboardView extends ItemView {
 		this.addButton(buttons, "Run self-test", () => this.deps.onSelfTest());
 		this.addButton(buttons, "Open settings", () => this.deps.onOpenSettings());
 		this.addButton(buttons, "Show sync log", () => this.deps.onShowLog());
+	}
+
+	/**
+	 * v0.8.1 feature 1: guided empty state shown when there are no
+	 * credentials anywhere — a "Get started" heading + three numbered steps
+	 * with buttons. Steps 2 and 3 stay disabled until connected.
+	 */
+	private renderGetStarted(root: HTMLElement, remoteFolder: string): void {
+		root.createEl("h4", { cls: "filen-cloud-sync-dashboard-heading" }).setText("Get started");
+		const section = root.createDiv({ cls: "filen-cloud-sync-dashboard-section" });
+		section.createDiv({ cls: "filen-cloud-sync-dashboard-muted" })
+			.setText(`Remote folder: ${remoteFolder}`);
+
+		const steps: Array<{ label: string; button: string; enabled: boolean; onClick: () => void }> = [
+			{
+				label: "Connect your Filen account",
+				button: "Open settings",
+				enabled: true,
+				onClick: () => this.deps.onOpenSettings(),
+			},
+			{
+				label: "Run self-test",
+				button: "Run self-test",
+				enabled: false, // until connected
+				onClick: () => this.deps.onSelfTest(),
+			},
+			{
+				label: "Sync now",
+				button: "Sync now",
+				enabled: false, // until connected
+				onClick: () => this.deps.onSyncNow(),
+			},
+		];
+		steps.forEach((step, index) => {
+			const row = section.createDiv({ cls: "filen-cloud-sync-dashboard-step" });
+			row.createSpan({ cls: "filen-cloud-sync-dashboard-step-number" })
+				.setText(`${index + 1}.`);
+			row.createSpan({ cls: "filen-cloud-sync-dashboard-step-label" }).setText(step.label);
+			const button = row.createEl("button", { cls: "filen-cloud-sync-dashboard-button" });
+			button.setText(step.button);
+			button.disabled = !step.enabled;
+			button.addEventListener("click", step.onClick);
+		});
 	}
 
 	/** Push/pull one-time runs are destructive mirrors — confirm first (v0.7.3). */

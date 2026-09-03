@@ -34,18 +34,26 @@ export class UnlockModal extends Modal {
 					.onChange(value => {
 						this.passwordValue = value;
 					});
+				// v0.8.1: Enter submits from the password field…
 				text.inputEl.addEventListener("keydown", event => {
 					if (event.key === "Enter") void this.submit();
 				});
+				// …and the password field is focused on open (autofocus).
+				text.inputEl.focus();
 			});
 		new Setting(this.contentEl)
 			.setName("Two-factor code")
 			.setDesc("6-digit TOTP, only if 2FA is enabled on your account")
-			.addText(text => text
-				.setPlaceholder("XXXXXX")
-				.onChange(value => {
-					this.twoFactorValue = value.trim();
-				}));
+			.addText(text => {
+				text.setPlaceholder("XXXXXX")
+					.onChange(value => {
+						this.twoFactorValue = value.trim();
+					});
+				// v0.8.1: Enter submits from the 2FA field too.
+				text.inputEl.addEventListener("keydown", event => {
+					if (event.key === "Enter") void this.submit();
+				});
+			});
 		this.errorEl = this.contentEl.createDiv({ cls: "filen-cloud-sync-unlock-error" });
 		new Setting(this.contentEl)
 			.addButton(button => button

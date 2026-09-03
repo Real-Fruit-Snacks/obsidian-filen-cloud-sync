@@ -17,19 +17,74 @@
 	color: var(--text-warning);
 }
 
+/* Sync log viewer (v0.8.1): toolbar + chip rows */
+.filen-cloud-sync-log-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.filen-cloud-sync-log-toolbar .setting-item {
+	border: none;
+	padding: 0;
+	margin-left: auto;
+}
+
+.filen-cloud-sync-log-search {
+	flex: 1 1 140px;
+}
+
 .filen-cloud-sync-log-view {
-	font-family: var(--font-monospace);
 	font-size: var(--font-ui-smaller);
-	white-space: pre-wrap;
 	user-select: text;
 }
 
-.filen-cloud-sync-log-entry.filen-cloud-sync-log-error {
+.filen-cloud-sync-log-empty {
+	color: var(--text-muted);
+	padding: 6px 0;
+}
+
+.filen-cloud-sync-log-entry {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	padding: 2px 0;
+}
+
+.filen-cloud-sync-log-chip {
+	flex: 0 0 auto;
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-smaller);
+	font-weight: var(--font-semibold);
+	padding: 0 6px;
+	border-radius: 4px;
+	background: var(--background-secondary);
+}
+
+.filen-cloud-sync-log-chip-info {
+	color: var(--text-accent);
+}
+
+.filen-cloud-sync-log-chip-warn,
+.filen-cloud-sync-log-chip-conflict {
+	color: var(--text-warning);
+}
+
+.filen-cloud-sync-log-chip-error {
 	color: var(--text-error);
 }
 
-.filen-cloud-sync-log-entry.filen-cloud-sync-log-warn {
-	color: var(--text-warning);
+.filen-cloud-sync-log-ts {
+	flex: 0 0 auto;
+	font-family: var(--font-monospace);
+	color: var(--text-muted);
+}
+
+.filen-cloud-sync-log-msg {
+	flex: 1 1 auto;
+	word-break: break-word;
 }
 
 /* Ignored folder chips (settings) */
@@ -437,4 +492,35 @@
 	display: flex;
 	gap: var(--size-4-2);
 	margin-top: var(--size-4-1);
+}
+
+/* About block at the bottom of settings (v0.8.1) */
+.filen-cloud-sync-about {
+	margin-top: 24px;
+	padding-top: 12px;
+	border-top: 1px solid var(--background-modifier-border);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+/* Dashboard: guided empty state + offline line (v0.8.1) */
+.filen-cloud-sync-dashboard-step {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 4px 0;
+}
+
+.filen-cloud-sync-dashboard-step-number {
+	color: var(--text-muted);
+	font-weight: var(--font-semibold);
+}
+
+.filen-cloud-sync-dashboard-step-label {
+	flex: 1 1 auto;
+}
+
+.filen-cloud-sync-dashboard-offline {
+	color: var(--text-warning);
+	font-weight: var(--font-semibold);
 }
