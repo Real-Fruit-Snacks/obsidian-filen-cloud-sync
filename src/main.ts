@@ -591,7 +591,7 @@ export default class FilenSyncPlugin extends Plugin {
 		// Progress modal: manual runs only — auto runs stay silent (feature E).
 		const modal = options.manual
 			? new SyncProgressModal(
-				this.app, this.syncLog,
+				this.app,
 				() => new SyncLogModal(this.app, this.syncLog, () => this.lastRunSummary()).open(),
 			)
 			: null;
@@ -610,7 +610,10 @@ export default class FilenSyncPlugin extends Plugin {
 				const clean = (result.status === "ok" || result.status === "empty")
 					&& (result.opFailures ?? 0) === 0
 					&& (result.plan?.conflicts.length ?? 0) === 0;
-				modal.finish(result.message, clean);
+				modal.finish(
+					result.message, clean,
+					result.plan?.conflicts.map(conflict => conflict.path) ?? [],
+				);
 				if (result.status === "error") this.friendlyNotice(result.message, "Filen Cloud Sync failed");
 				else if (result.status === "aborted") this.friendlyNotice(result.message, "Filen Cloud Sync aborted");
 			} else if (result.status === "error") {

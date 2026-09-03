@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.7] — 2026-09-03
+
+### Changed
+- **Progress modal no longer shows log lines.** During a run it shows phase,
+  progress bar and the current file; on completion it shows a clean summary
+  of what was done plus any conflict paths (kept-both copies). The full sync
+  log remains one click away via the "View log" button.
+
 ## [0.7.6] — 2026-09-03
 
 ### Fixed

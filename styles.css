@@ -89,14 +89,29 @@
 	display: none;
 }
 
-.filen-cloud-sync-progress-log {
+.filen-cloud-sync-progress-summary {
+	font-weight: var(--font-medium);
+	margin-bottom: 8px;
+	user-select: text;
+}
+
+.filen-cloud-sync-progress-conflicts {
+	border-left: 2px solid var(--color-orange);
+	padding-left: 10px;
+	margin-bottom: 8px;
+	user-select: text;
+}
+
+.filen-cloud-sync-progress-conflicts-head {
+	font-weight: var(--font-medium);
+	margin-bottom: 4px;
+}
+
+.filen-cloud-sync-progress-conflict-path {
 	font-family: var(--font-monospace);
 	font-size: var(--font-ui-smaller);
-	white-space: pre-wrap;
-	user-select: text;
-	max-height: 120px;
-	overflow-y: auto;
-	margin-bottom: 8px;
+	color: var(--text-muted);
+	overflow-wrap: anywhere;
 }
 
 /* Version history modal */
