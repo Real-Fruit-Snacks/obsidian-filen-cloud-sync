@@ -32,7 +32,19 @@ is never stored. Works on **desktop and mobile**.
 - **Pause syncing** — one click on the dashboard or in settings stops every
   sync trigger (automatic and manual) until you resume.
 - **Conflict handling** — keep both copies by default, keep-newer optional,
-  or a side-by-side merge view ("ask" mode) when you want to decide.
+  or a side-by-side merge view ("ask" mode) when you want to decide. Runs
+  with several conflicts notify once with an aggregate count instead of a
+  notice storm.
+- **Conflict cleanup view** — "Review conflict copies" (command or dashboard
+  button) lists every conflict copy in the vault with one-click open and
+  trash actions.
+- **Force sync current file** — command or right-click menu uploads one file
+  to Filen right now, in any sync direction, with a confirmation when the
+  remote copy changed since the last sync.
+- **Background-change notice (opt-in)** — a single one-line notice when an
+  automatic sync uploaded, downloaded or deleted files.
+- **Status bar timestamp** — the idle status bar shows when the last sync
+  finished ("Filen: idle · 3 minutes ago"), refreshed every minute.
 - **Version history** — browse and restore Filen file versions from the
   command palette or the right-click menu.
 - **Selective sync** — ignore folders with a right-click; opt-in sync of

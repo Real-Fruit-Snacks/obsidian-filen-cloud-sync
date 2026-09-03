@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.8.0] — 2026-09-04
+
+### Added
+- **Conflict cleanup view** — the "Review conflict copies" command and a
+  matching button in the dashboard's Conflicts section open a modal listing
+  every conflict copy in the vault (exact `name (conflict …)` pattern shared
+  with the planner) with its original path. Per row: Open copy, Open
+  original (disabled + noted when the original is gone) and Delete copy
+  (trash-only via FileManager; the copy is trashed on Filen on the next
+  sync). The list refreshes after each delete.
+- **Force sync current file** — command (active editor file) and a
+  right-click "Force sync to Filen" file-menu item upload one file
+  immediately, in ANY sync direction (two-way, push, pull) and without ever
+  opening the merge view. When the remote copy changed since the last sync a
+  confirmation gates the overwrite; paused blocks with a notice; the base
+  record is updated and persisted on success.
+- **Background-change notice (opt-in)** — new setting "Notify when a
+  background sync changes files" (default off). After a non-manual run that
+  transferred anything, one friendly one-line notice summarizes it
+  (uploads/downloads/deletes, pluralized). Empty and error runs stay silent.
+- **Status bar last-sync timestamp** — idle shows "Filen: idle · 3 minutes
+  ago" (existing relative-time formatting), refreshed every minute via a
+  registered interval. Paused/running/error states are unchanged.
+
+### Changed
+- **Aggregated conflict notices** — conflicts are still logged individually
+  in the sync log, but a run with multiple conflicts now notifies ONCE
+  ("N conflicts — kept both copies (see dashboard or sync log)") instead of
+  once per conflict. A single conflict keeps its per-path notice.
+
 ## [0.7.7] — 2026-09-03
 
 ### Changed

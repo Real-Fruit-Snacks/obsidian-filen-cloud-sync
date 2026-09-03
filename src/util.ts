@@ -237,8 +237,30 @@ export function conflictPathFor(path: string, loserMtimeMillis: number): string 
 	return parent.length === 0 ? renamed : parent + "/" + renamed;
 }
 
+/**
+ * The exact conflict-copy stem produced by conflictPathFor:
+ * "<stem> (conflict YYYY-MM-DD HHmm)" (no lookbehind — Hermes-compatible).
+ * v0.8.0 feature 1: shared by the planner (via conflictPathFor) and the
+ * conflict cleanup view, so lookalikes ("note (conflict).md",
+ * "conflicting.md", "note (conflict x).md") never match.
+ */
+const CONFLICT_COPY_STEM = /^(.+) \(conflict \d{4}-\d{2}-\d{2} \d{4}\)$/;
+
+/**
+ * Strip the conflict suffix: "dir/note (conflict 2024-06-01 1234).md" →
+ * "dir/note.md". Null when the path is NOT a conflict copy.
+ */
+export function conflictCopyOriginalPath(path: string): string | null {
+	const parent = parentPathOf(path);
+	const { stem, ext } = splitExtension(baseNameOf(path));
+	const match = CONFLICT_COPY_STEM.exec(stem);
+	if (!match) return null;
+	const originalName = (match[1] as string) + ext;
+	return parent.length === 0 ? originalName : `${parent}/${originalName}`;
+}
+
 export function isConflictCopyName(path: string): boolean {
-	return baseNameOf(path).includes(" (conflict ");
+	return conflictCopyOriginalPath(path) !== null;
 }
 
 /* ---------------- reserved names ---------------- */
@@ -715,6 +737,45 @@ export function relativeTime(millis: number, now: number = Date.now()): string {
 	const hours = Math.round(minutes / 60);
 	if (hours < 24) return pluralize(hours, "hour") + " ago";
 	return new Date(millis).toLocaleString();
+}
+
+/**
+ * v0.8.0 feature 2: ONE friendly one-line notice after a non-manual run that
+ * actually transferred something (opt-in via notifyOnBackgroundChanges).
+ * Returns null — stay silent — when disabled, for manual runs (those already
+ * show the progress modal), for empty/error runs, or when nothing moved.
+ */
+export function backgroundChangeNotice(opts: {
+	enabled: boolean;
+	manual: boolean;
+	status: string;
+	counts: { uploads: number; downloads: number; trashLocal: number; trashRemote: number };
+}): string | null {
+	if (!opts.enabled || opts.manual || opts.status !== "ok") return null;
+	const { uploads, downloads, trashLocal, trashRemote } = opts.counts;
+	const trashes = trashLocal + trashRemote;
+	if (uploads + downloads + trashes === 0) return null;
+	const parts: string[] = [];
+	if (uploads > 0) parts.push(`${pluralize(uploads, "file")} uploaded`);
+	if (downloads > 0) parts.push(`${pluralize(downloads, "file")} updated from the cloud`);
+	if (trashes > 0) parts.push(`${pluralize(trashes, "file")} deleted`);
+	return parts.join(", ");
+}
+
+/**
+ * v0.8.0 feature 4: status-bar text per state. Idle carries the relative
+ * last-sync timestamp ("Filen: idle · 3 min ago" — relativeTime phrasing);
+ * paused/running/error are unchanged.
+ */
+export function statusBarText(
+	state: "idle" | "running" | "error",
+	opts: { paused: boolean; lastSyncFinishedAt: number | null; now?: number },
+): string {
+	if (opts.paused && state !== "running") return "Filen: paused";
+	if (state === "running") return "Filen: syncing…";
+	if (state === "error") return "Filen: error";
+	if (opts.lastSyncFinishedAt === null) return "Filen: idle";
+	return `Filen: idle · ${relativeTime(opts.lastSyncFinishedAt, opts.now)}`;
 }
 
 export interface FriendlyError {

@@ -49,6 +49,8 @@ export interface DashboardDeps {
 	onSelfTest: () => void;
 	onOpenSettings: () => void;
 	onShowLog: () => void;
+	/** v0.8.0 feature 1: open the conflict cleanup view. */
+	onReviewConflicts: () => void;
 }
 
 export class FilenSyncDashboardView extends ItemView {
@@ -152,6 +154,9 @@ export class FilenSyncDashboardView extends ItemView {
 				conflictsEl.createDiv({ cls: "filen-cloud-sync-dashboard-conflict" }).setText(path);
 			}
 		}
+		// v0.8.0 feature 1: the cleanup view lists every conflict copy still in
+		// the vault (not just the last plan's) with open/delete actions.
+		this.addButton(conflictsEl, "Review conflict copies", () => this.deps.onReviewConflicts());
 
 		/* ---- Skipped / excluded ---- */
 		const skippedEl = this.section(root, "Skipped / excluded");

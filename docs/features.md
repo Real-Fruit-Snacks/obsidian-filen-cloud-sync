@@ -22,6 +22,11 @@ this document covers every option, caveat and edge case.
 - [Parallel chunk transfers](#parallel-chunk-transfers)
 - [Fast remote polling](#fast-remote-polling)
 - [Conflict merge view (ask mode)](#conflict-merge-view-ask-mode)
+- [Conflict cleanup view](#conflict-cleanup-view)
+- [Aggregated conflict notices](#aggregated-conflict-notices)
+- [Force sync current file](#force-sync-current-file)
+- [Background-change notice](#background-change-notice)
+- [Status bar last-sync timestamp](#status-bar-last-sync-timestamp)
 - [Sync dashboard](#sync-dashboard)
 - [Troubleshooting with the debug log](#troubleshooting)
 - [Known limitations](#known-limitations)
@@ -300,6 +305,52 @@ remote file is never trashed). Multiple conflicts queue sequentially. Binary
 or oversized files silently fall back to the auto policy. Note the diff is
 visual only — with no common base version there is no auto-merge.
 
+## Conflict cleanup view
+
+Keep-both conflicts leave copies named `name (conflict YYYY-MM-DD HHmm).ext`
+in the vault. Run **Review conflict copies** (command palette) or click
+**Review conflict copies** in the dashboard's Conflicts section to list every
+conflict copy in the vault with its derived original path. Each row offers
+**Open copy**, **Open original** (disabled and noted when the original file
+no longer exists) and **Delete copy** — deletion moves the copy to trash via
+FileManager (never a hard delete), and the copy is trashed on Filen on the
+next sync too. The list refreshes after each delete; an empty vault shows
+"No conflict copies in this vault."
+
+## Aggregated conflict notices
+
+Every conflict is still logged individually in the sync log (per path, with
+policy and winner), but a run with several conflicts surfaces ONE notice —
+"N conflicts — kept both copies (see dashboard or sync log)" — instead of a
+notice per file. A run with a single conflict keeps its per-path notice.
+
+## Force sync current file
+
+Run **Force sync current file** (uses the active editor file) or right-click
+a file → **Force sync to Filen** to upload that one file immediately.
+Explicit user intent beats the sync mode: this works under two-way, push AND
+pull, and never opens the merge view. If the remote copy changed since the
+last sync, a confirmation asks before overwriting it (the current remote
+version is kept as a Filen version either way). While syncing is paused the
+command shows the paused notice and stops; a success notice names the
+uploaded file.
+
+## Background-change notice
+
+**Settings → Filen Cloud Sync → Notify when a background sync changes
+files** (off by default): after an automatic run (interval, sync-on-save,
+startup) that actually transferred something, a single one-line notice
+summarizes it — e.g. "2 files updated from the cloud", "1 file uploaded".
+Manual runs already show the progress modal, and empty or failed runs stay
+silent (the existing error-notice behavior is unchanged).
+
+## Status bar last-sync timestamp
+
+The idle status bar shows when the last sync finished — "Filen: idle · 3
+minutes ago" — refreshed every minute. The paused, syncing and error states
+are unchanged, and there is no extra timer work on mobile (the status bar is
+hidden there anyway).
+
 ## Sync dashboard
 
 Run **Open sync dashboard** (or click the ribbon icon — it toggles the
@@ -309,7 +360,8 @@ folder, the last run's time/status/summary, conflicts from the last plan,
 the skipped/excluded count, and your Filen storage quota with a thin
 progress bar (fetched when the view opens and after manual syncs; "quota
 unavailable" on failure). Buttons: **Sync now**, **Preview sync plan**,
-**Run self-test**, **Open settings**, **Show sync log**. The view refreshes
+**Run self-test**, **Open settings**, **Show sync log**, plus **Review
+conflict copies** in the Conflicts section. The view refreshes
 on open, after each completed run and on settings save — no background
 timers.
 

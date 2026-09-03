@@ -488,6 +488,11 @@ export class SyncEngine {
 		if (plan.seedMode) {
 			this.log.info(`seed mode: ${plan.seedMode}`);
 		}
+		// v0.8.0 feature 7: every conflict is still LOGGED individually (the log
+		// keeps the per-path detail), but the user is NOTIFIED only once per run
+		// — one aggregate notice instead of a notice storm. A single conflict
+		// keeps its per-path message.
+		const conflictNotices: string[] = [];
 		for (const conflict of plan.conflicts) {
 			// Forced keep-newer (config paths) is deterministic housekeeping —
 			// the newest copy simply wins. Log it as info, not conflict-level:
@@ -500,7 +505,14 @@ export class SyncEngine {
 			}
 			const message = `conflict: ${conflict.path} (${conflict.policy}, winner: ${conflict.winner})`;
 			this.log.conflict(message);
-			this.notify(message);
+			conflictNotices.push(message);
+		}
+		if (conflictNotices.length === 1) {
+			this.notify(conflictNotices[0] as string);
+		} else if (conflictNotices.length > 1) {
+			this.notify(
+				`${pluralize(conflictNotices.length, "conflict")} — kept both copies (see dashboard or sync log)`,
+			);
 		}
 
 		// v0.4.0 feature E ("ask" mode): pause on each text conflict and let
@@ -562,6 +574,80 @@ export class SyncEngine {
 			skippedCount,
 			remoteTree: remote,
 		};
+	}
+
+	/* ---------------- force sync current file (v0.8.0 feature 3) ---------------- */
+
+	/**
+	 * Explicit one-file upload ("Force sync current file" / file-menu "Force
+	 * sync to Filen"). Explicit user intent beats the sync mode — this works
+	 * under two-way, push AND pull. The merge view is NEVER opened here; the
+	 * only prompt is the `confirmOverwrite` gate when the remote copy changed
+	 * since the last sync (remote uuid ≠ base uuid — a re-upload mints a new
+	 * uuid, so uuid inequality is exactly "remote changed").
+	 */
+	async forceUploadFile(
+		path: string,
+		confirmOverwrite: (path: string) => Promise<boolean>,
+	): Promise<void> {
+		const normalized = normalizeVaultPath(path);
+		if (this.getSettings().syncPaused) {
+			this.notify(SYNC_PAUSED_MESSAGE);
+			return;
+		}
+		const credentials = this.getCredentials();
+		if (!credentials) {
+			this.notify("not connected — connect your Filen account in settings");
+			return;
+		}
+		this.client.setCredentials(credentials);
+		const file = this.vault.getFileByPath(normalized);
+		if (!file) {
+			const message = `force sync: file not found: ${normalized}`;
+			this.log.error(message);
+			this.notify(message);
+			return;
+		}
+		try {
+			this.state = loadState(this.app);
+			this.base = baseRecordsAsMap(this.state);
+			// Fresh remote scan — the confirm gate needs the CURRENT remote uuid.
+			const scan = await scanRemote(this.client, credentials.syncRootUuid, loadDeviceId(this.app));
+			this.remoteFolderCache = new Map(scan.tree.folders);
+			const remoteFile = scan.tree.files.get(normalized);
+			const record = this.base.get(normalized);
+			if (record && remoteFile && remoteFile.uuid !== record.remoteUuid) {
+				// The remote copy moved on since the last sync — overwriting it
+				// is destructive enough to ask first (the old content survives
+				// as a Filen version either way).
+				if (!(await confirmOverwrite(normalized))) {
+					this.log.info(`force sync of ${normalized} canceled — remote copy changed since the last sync`);
+					return;
+				}
+			}
+			// Same upload path as opUpload (mtime/size captured BEFORE reading),
+			// minus chunk progress — irrelevant for a single explicit file.
+			const mtimeBefore = file.stat.mtime;
+			const sizeBefore = file.stat.size;
+			const data = await this.vault.readBinary(file);
+			const parentUuid = await this.ensureRemoteFolder(parentDir(normalized));
+			const result = await this.client.uploadFile(parentUuid, file.name, data, mtimeBefore);
+			this.base.set(normalized, {
+				localMtime: mtimeBefore,
+				localSize: sizeBefore,
+				remoteUuid: result.uuid,
+				remoteMtime: result.lastModified,
+				remoteSize: result.size,
+			});
+			this.persistState();
+			this.log.persist();
+			this.log.info(`force-synced ${normalized} (${formatBytes(result.size)}) — uploaded to Filen`);
+			this.notify(`Uploaded ${normalized}`);
+		} catch (e) {
+			const message = `force sync of ${normalized} failed: ${errMsg(e)}`;
+			this.log.error(message);
+			this.notify(message);
+		}
 	}
 
 	/* ---------------- interactive conflict resolution (v0.4.0 E) ---------------- */

@@ -30,6 +30,7 @@ export interface FilenSyncSettings {
 	syncIntervalMinutes: number;
 	autoSyncOnStart: boolean;
 	syncOnSave: boolean;
+	notifyOnBackgroundChanges: boolean; // v0.8.0: one notice after background runs that moved files (never shared)
 	syncDirection: SyncDirection; // v0.7.0: two-way / push / pull (per-device, never shared)
 	syncPaused: boolean; // v0.7.1: blocks every sync trigger path until resumed (never shared)
 	conflictPolicy: ConflictPolicy;
@@ -59,6 +60,7 @@ export function defaultSettings(vaultName: string): FilenSyncSettings {
 		syncIntervalMinutes: 10,
 		autoSyncOnStart: true,
 		syncOnSave: true,
+		notifyOnBackgroundChanges: false,
 		syncDirection: "twoWay",
 		syncPaused: false,
 		conflictPolicy: "keep_both",
@@ -331,6 +333,18 @@ export class FilenSyncSettingTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.syncOnSave)
 				.onChange(async value => {
 					this.plugin.settings.syncOnSave = value;
+					await this.plugin.saveSettings();
+				}));
+
+		// v0.8.0 feature 2: opt-in — background runs are otherwise silent on
+		// success. One aggregate notice per run, never per file.
+		new Setting(containerEl)
+			.setName("Notify when a background sync changes files")
+			.setDesc("Show a one-line notice when a background sync (interval, on-save, startup) uploads, downloads or deletes files.")
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.notifyOnBackgroundChanges)
+				.onChange(async value => {
+					this.plugin.settings.notifyOnBackgroundChanges = value;
 					await this.plugin.saveSettings();
 				}));
 

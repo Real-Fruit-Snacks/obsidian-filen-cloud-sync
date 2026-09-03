@@ -28,7 +28,9 @@ import type { MergeDecision } from "./sync/planner";
 import type { SyncDirection } from "./sync/types";
 import { SharedPrefsSync } from "./sync/sharedPrefsSync";
 import { clearDeviceId, clearLog, clearState, loadCredentials, loadDeviceId, loadState } from "./sync/state";
+import { ConfirmModal } from "./ui/confirm";
 import { ConflictMergeModal } from "./ui/conflictMerge";
+import { ConflictReviewModal } from "./ui/conflictReview";
 import { DashboardDeps, FilenSyncDashboardView, VIEW_TYPE_FILEN_DASHBOARD } from "./ui/dashboard";
 import { DryRunModal } from "./ui/dryRun";
 import { ExplorerDecorations } from "./ui/explorerDecorations";
@@ -36,7 +38,7 @@ import { SyncProgressModal } from "./ui/progress";
 import { runSelfTest, SelfTestModal } from "./ui/selfTest";
 import { UnlockModal } from "./ui/unlock";
 import { VersionHistoryModal } from "./ui/versions";
-import { friendlyError, normalizeVaultPath, relativeTime } from "./util";
+import { backgroundChangeNotice, friendlyError, normalizeVaultPath, relativeTime, statusBarText } from "./util";
 
 export default class FilenSyncPlugin extends Plugin {
 	settings!: FilenSyncSettings;
@@ -170,6 +172,26 @@ export default class FilenSyncPlugin extends Plugin {
 				void this.openVersionHistory(file);
 			},
 		});
+		// v0.8.0 feature 3: explicit one-file upload — works in ANY sync
+		// direction (user intent beats the mode) and never opens the merge view.
+		this.addCommand({
+			id: "force-sync-current-file",
+			name: "Force sync current file",
+			callback: () => {
+				const file = this.app.workspace.getActiveFile();
+				if (!file) {
+					new Notice("Filen Cloud Sync: open a file first");
+					return;
+				}
+				void this.forceSyncFile(file);
+			},
+		});
+		// v0.8.0 feature 1: conflict cleanup view.
+		this.addCommand({
+			id: "review-conflict-copies",
+			name: "Review conflict copies",
+			callback: () => new ConflictReviewModal(this.app).open(),
+		});
 		this.addCommand({
 			id: "reset-local-sync-state",
 			name: "Reset local sync state",
@@ -219,6 +241,11 @@ export default class FilenSyncPlugin extends Plugin {
 					.setTitle("Filen version history")
 					.setIcon("history")
 					.onClick(() => void this.openVersionHistory(file)));
+				// v0.8.0 feature 3: right-click a file → force upload.
+				menu.addItem(item => item
+					.setTitle("Force sync to Filen")
+					.setIcon("upload-cloud")
+					.onClick(() => void this.forceSyncFile(file)));
 			}
 		}));
 
@@ -237,6 +264,12 @@ export default class FilenSyncPlugin extends Plugin {
 			this.statusBarItem = this.addStatusBarItem();
 			this.statusBarItem.addClass("filen-cloud-sync-statusbar");
 			this.updateStatusBar("idle");
+			// v0.8.0 feature 4: refresh the idle relative timestamp every minute
+			// (cheap; registerInterval auto-cleans on unload). No-op on mobile —
+			// the status bar is hidden there anyway.
+			this.registerInterval(window.setInterval(() => {
+				if (this.statusBarState === "idle") this.updateStatusBar("idle");
+			}, 60_000));
 		}
 
 		// Guard 7: vault listeners ONLY inside onLayoutReady (create fires for
@@ -430,7 +463,37 @@ export default class FilenSyncPlugin extends Plugin {
 				setting?.openTabById("filen-cloud-sync");
 			},
 			onShowLog: () => new SyncLogModal(this.app, this.syncLog, () => this.lastRunSummary()).open(),
+			// v0.8.0 feature 1: conflict cleanup view from the dashboard.
+			onReviewConflicts: () => new ConflictReviewModal(this.app).open(),
 		};
+	}
+
+	/* ---------------- force sync current file (v0.8.0 feature 3) ---------------- */
+
+	/**
+	 * Upload one file to Filen right now, whatever the sync direction. When the
+	 * remote copy changed since the last sync, the ConfirmModal is the ONLY
+	 * prompt — the merge view never opens for a force sync.
+	 */
+	private async forceSyncFile(file: TFile): Promise<void> {
+		if (this.isLocked()) {
+			new Notice("Filen Cloud Sync is locked — run the 'Unlock sync' command");
+			return;
+		}
+		await this.engine.forceUploadFile(
+			normalizeVaultPath(file.path),
+			() => new Promise<boolean>(resolve => {
+				new ConfirmModal(
+					this.app,
+					"Force sync to Filen",
+					"Remote copy changed since the last sync — overwrite it on Filen? "
+					+ "(Your current remote version is kept as a Filen version.)",
+					"Overwrite",
+					() => resolve(true),
+					() => resolve(false),
+				).open();
+			}),
+		);
 	}
 
 	/* ---------------- version history (feature B) ---------------- */
@@ -620,6 +683,16 @@ export default class FilenSyncPlugin extends Plugin {
 				// Auto runs: surface a Notice only on the ok→error transition
 				// (rate-limited, not every failing run); status bar always updates.
 				if (previousStatus !== "error") this.friendlyNotice(result.message, "Filen Cloud Sync failed");
+			} else if (!options.manual && result.plan) {
+				// v0.8.0 feature 2: opt-in background-change notice — ONE line
+				// composed from the plan counts; empty/error runs stay silent.
+				const backgroundMessage = backgroundChangeNotice({
+					enabled: this.settings.notifyOnBackgroundChanges,
+					manual: false,
+					status: result.status,
+					counts: result.plan.counts,
+				});
+				if (backgroundMessage) new Notice(`Filen Cloud Sync: ${backgroundMessage}`);
 			}
 			this.updateStatusBar(result.status === "error" ? "error" : "idle");
 			// v0.5.0: post-run shared-prefs check on the run's own remote tree
@@ -657,19 +730,28 @@ export default class FilenSyncPlugin extends Plugin {
 		// v0.7.1 feature B: the paused state wins over idle/error (a run can't
 		// be in flight while paused — every trigger path is blocked).
 		if (this.settings.syncPaused && state !== "running") {
-			this.statusBarItem.setText("Filen: paused");
+			this.statusBarItem.setText(statusBarText(state, {
+				paused: true, lastSyncFinishedAt: this.lastSyncFinishedAt,
+			}));
 			this.statusBarItem.setAttribute("aria-label", `Filen Cloud Sync: ${SYNC_PAUSED_MESSAGE}`);
 			return;
 		}
 		if (state === "running") {
-			this.statusBarItem.setText("Filen: syncing…");
+			this.statusBarItem.setText(statusBarText(state, {
+				paused: false, lastSyncFinishedAt: this.lastSyncFinishedAt,
+			}));
 		} else if (state === "error") {
 			this.statusBarItem.addClass("filen-cloud-sync-error");
 			const detail = this.lastSyncResult ? ` — ${this.lastSyncResult.message}` : "";
-			this.statusBarItem.setText("Filen: error");
+			this.statusBarItem.setText(statusBarText(state, {
+				paused: false, lastSyncFinishedAt: this.lastSyncFinishedAt,
+			}));
 			this.statusBarItem.setAttribute("aria-label", `Filen Cloud Sync error${detail}`);
 		} else {
-			this.statusBarItem.setText("Filen: idle");
+			// v0.8.0 feature 4: idle shows the relative last-sync timestamp.
+			this.statusBarItem.setText(statusBarText(state, {
+				paused: false, lastSyncFinishedAt: this.lastSyncFinishedAt,
+			}));
 			if (this.lastSyncResult) {
 				this.statusBarItem.setAttribute("aria-label", `Filen Cloud Sync: ${this.lastSyncResult.message}`);
 			}
